@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Verification {
   final int? id;
   final String claim;
@@ -24,7 +26,7 @@ class Verification {
       'verdict': verdict,
       'confidence': confidence,
       'summary': summary,
-      'findings': findings.join('|||'),
+      'findings': jsonEncode(findings),
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -36,7 +38,7 @@ class Verification {
       verdict: map['verdict'] as String,
       confidence: (map['confidence'] as num).toDouble(),
       summary: map['summary'] as String,
-      findings: (map['findings'] as String).split('|||'),
+      findings: List<String>.from(jsonDecode(map['findings'] as String)),
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }

@@ -30,22 +30,10 @@ class DatabaseHelper {
       path,
       version: 2,
       onCreate: _createDB,
-      onUpgrade: _upgradeDB,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
     );
-  }
-
-  // DATABASE UPGRADE
-  Future<void> _upgradeDB(
-    Database db,
-    int oldVersion,
-    int newVersion,
-  ) async {
-    if (oldVersion < 2) {
-      await _createDB(db, newVersion);
-    }
   }
 
   // CREATE TABLES
