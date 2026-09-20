@@ -1,0 +1,7 @@
+id,text,label
+1,"The Earth revolves around the Sun",REAL
+2,"Water freezes at 0 degrees Celsius at standard pressure",REAL
+3,"Drinking bleach cures viral infections",FAKE
+4,"Humans can breathe normally underwater without equipment",FAKE
+5,"Scientists are still investigating whether this newly reported treatment works",UNCERTAIN
+6,"This social media claim cannot currently be verified from reliable evidence",UNCERTAIN
