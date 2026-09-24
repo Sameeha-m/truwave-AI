@@ -1,16 +1,34 @@
 import 'package:flutter/material.dart';
 
-class VerificationResultScreen extends StatelessWidget {
-  const VerificationResultScreen({super.key});
+import '../database/source_model.dart';
+import '../database/verification_model.dart';
 
-  final List<String> findings = const [
-    'Confirmed by 4+ credible sources',
-    'Matched with official statements',
-    'No evidence found against this claim',
-  ];
+class VerificationResultScreen extends StatelessWidget {
+  final Verification verification;
+  final List<VerificationSource> sources;
+
+  const VerificationResultScreen({
+    super.key,
+    required this.verification,
+    required this.sources,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isReal = verification.verdict == 'REAL';
+    final isFake = verification.verdict == 'FAKE';
+    final resultColor = isReal
+        ? const Color(0xFF18A270)
+        : isFake
+        ? const Color(0xFFFA3C37)
+        : const Color(0xFFF59E0B);
+    final resultIcon = isReal
+        ? Icons.check
+        : isFake
+        ? Icons.close
+        : Icons.question_mark;
+    final confidence = verification.confidence.clamp(0.0, 1.0).toDouble();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F8),
       body: SafeArea(
@@ -19,7 +37,6 @@ class VerificationResultScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -27,105 +44,59 @@ class VerificationResultScreen extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 28,
-                      color: Color(0xFF191C21),
-                    ),
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 28),
                   ),
                   const Text(
                     'Verification Result',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF191C21),
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.info_outline,
-                      size: 26,
-                      color: Color(0xFF6E7582),
-                    ),
-                  ),
+                  const Icon(Icons.info_outline, size: 26),
                 ],
               ),
-
-              // Result section
               const SizedBox(height: 28),
-
               Center(
                 child: Column(
                   children: [
-                    // Green result illustration
                     Container(
                       width: 192,
                       height: 144,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF18A270),
+                        color: resultColor,
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 80,
-                        ),
+                      child: Center(
+                        child: Icon(resultIcon, color: Colors.white, size: 80),
                       ),
                     ),
-
                     const SizedBox(height: 28),
-
-                    const Text(
-                      'This news is likely',
+                    Text(
+                      isFake ? 'This news is likely' : 'This news is',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF18A270),
+                        color: resultColor,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
-                    const Text(
-                      'REAL',
+                    Text(
+                      verification.verdict,
                       style: TextStyle(
                         fontSize: 40,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: -1,
-                        color: Color(0xFF18A270),
+                        color: resultColor,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
-                    const Text(
-                      'Confidence Score',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF23252A),
-                      ),
-                    ),
-
+                    const Text('Confidence Score'),
                     const SizedBox(height: 2),
-
-                    const Text(
-                      '82%',
-                      style: TextStyle(
+                    Text(
+                      '${(confidence * 100).round()}%',
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: -1,
-                        color: Color(0xFF191C21),
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
-                    // Confidence bar
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: SizedBox(
@@ -133,14 +104,10 @@ class VerificationResultScreen extends StatelessWidget {
                         height: 8,
                         child: Stack(
                           children: [
-                            Container(
-                              color: const Color(0xFFE5E9F2),
-                            ),
+                            Container(color: const Color(0xFFE5E9F2)),
                             FractionallySizedBox(
-                              widthFactor: 0.82,
-                              child: Container(
-                                color: const Color(0xFF18A270),
-                              ),
+                              widthFactor: confidence,
+                              child: Container(color: resultColor),
                             ),
                           ],
                         ),
@@ -149,168 +116,64 @@ class VerificationResultScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 30),
-
-              // Why we think so
               const Text(
                 'Why we think so',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF191C21),
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-
               const SizedBox(height: 8),
-
-              const Text(
-                'Multiple credible sources report similar information. '
-                'The claim aligns with verified facts and trusted news outlets.',
-                style: TextStyle(
-                  fontSize: 16,
-                  height: 1.35,
-                  color: Color(0xFF6E7582),
-                ),
+              Text(
+                verification.summary,
+                style: const TextStyle(fontSize: 16, height: 1.35),
               ),
-
               const SizedBox(height: 24),
-
-              // Key findings
               const Text(
                 'Key Findings',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF191C21),
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-
               const SizedBox(height: 8),
-
-              ...findings.map(
+              ...verification.findings.map(
                 (finding) => Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 2),
-                        child: Icon(
-                          Icons.check,
-                          size: 16,
-                          color: Color(0xFF18A270),
-                        ),
-                      ),
+                      Icon(Icons.check, size: 16, color: resultColor),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          finding,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF23252A),
-                          ),
-                        ),
-                      ),
+                      Expanded(child: Text(finding)),
                     ],
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Sources
               const Text(
                 'Sources we checked',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF191C21),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ...sources.map(
+                (source) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text('${source.name}: ${source.title}'),
                 ),
               ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  _SourceCircle(
-                    color: const Color(0xFF6346E9),
-                  ),
-                  const SizedBox(width: 16),
-                  _SourceCircle(
-                    color: Colors.white,
-                    border: true,
-                  ),
-                  const SizedBox(width: 16),
-                  _SourceCircle(
-                    color: const Color(0xFF18A270),
-                  ),
-                  const SizedBox(width: 16),
-                  _SourceCircle(
-                    color: const Color(0xFF37A2EB),
-                  ),
-                  const SizedBox(width: 16),
-                  _SourceCircle(
-                    color: const Color(0xFF6346E9),
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 28),
-
-              // Explanation button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF087949),
+                    backgroundColor: resultColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
                   ),
-                  child: const Text(
-                    'View Full Explanation',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: const Text('View Full Explanation'),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SourceCircle extends StatelessWidget {
-  final Color color;
-  final bool border;
-
-  const _SourceCircle({
-    required this.color,
-    this.border = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: border
-            ? Border.all(
-                color: const Color(0xFFD1D5DB),
-              )
-            : null,
       ),
     );
   }

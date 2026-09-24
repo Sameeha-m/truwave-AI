@@ -24,7 +24,7 @@ class Verification {
       'verdict': verdict,
       'confidence': confidence,
       'summary': summary,
-      'findings': findings.join('|||'),
+      'findings': findings,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -36,8 +36,19 @@ class Verification {
       verdict: map['verdict'] as String,
       confidence: (map['confidence'] as num).toDouble(),
       summary: map['summary'] as String,
-      findings: (map['findings'] as String).split('|||'),
+      findings: List<String>.from(map['findings'] as List<dynamic>),
       createdAt: DateTime.parse(map['created_at'] as String),
+    );
+  }
+
+  factory Verification.fromApiResponse(String claim, Map<String, dynamic> map) {
+    return Verification(
+      claim: claim,
+      verdict: map['verdict'] as String,
+      confidence: (map['confidence'] as num).toDouble(),
+      summary: map['summary'] as String,
+      findings: List<String>.from(map['findings'] as List<dynamic>),
+      createdAt: DateTime.now(),
     );
   }
 }

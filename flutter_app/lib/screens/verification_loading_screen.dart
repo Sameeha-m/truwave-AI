@@ -1,23 +1,22 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../database/database_helper.dart';
+import '../database/source_model.dart';
+import '../database/verification_model.dart';
+import '../services/verification_service.dart';
 import 'verification_result_screen.dart';
 
 class VerificationLoadingScreen extends StatefulWidget {
   final String claim;
 
-  const VerificationLoadingScreen({
-    super.key,
-    required this.claim,
-  });
+  const VerificationLoadingScreen({super.key, required this.claim});
 
   @override
   State<VerificationLoadingScreen> createState() =>
       _VerificationLoadingScreenState();
 }
 
-class _VerificationLoadingScreenState
-    extends State<VerificationLoadingScreen>
+class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
     with SingleTickerProviderStateMixin {
   final List<VerificationStep> steps = const [
     VerificationStep(
@@ -42,17 +41,43 @@ class _VerificationLoadingScreenState
   @override
   void initState() {
     super.initState();
+    _verifyClaim();
+  }
 
-    Timer(const Duration(seconds: 5), () {
+  Future<void> _verifyClaim() async {
+    try {
+      final response = await VerificationService().verifyClaim(widget.claim);
+      final verification = Verification.fromApiResponse(widget.claim, response);
+      final sources = (response['sources'] as List<dynamic>)
+          .map(
+            (source) =>
+                VerificationSource.fromApiMap(source as Map<String, dynamic>),
+          )
+          .toList();
+
+      await DatabaseHelper.instance.insertVerification(verification, sources);
+
       if (!mounted) return;
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const VerificationResultScreen(),
+          builder: (context) => VerificationResultScreen(
+            verification: verification,
+            sources: sources,
+          ),
         ),
       );
-    });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Verification failed. Check your connection and retry.',
+          ),
+        ),
+      );
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -75,7 +100,8 @@ class _VerificationLoadingScreenState
     return AnimatedBuilder(
       animation: _loadingController,
       builder: (context, child) {
-        final pulse = 0.96 + (0.04 * math.sin(_loadingController.value * math.pi * 2));
+        final pulse =
+            0.96 + (0.04 * math.sin(_loadingController.value * math.pi * 2));
         final angle = _loadingController.value * math.pi * 2;
 
         return Transform.scale(
@@ -211,9 +237,7 @@ class _VerificationLoadingScreenState
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFFE6E9F1),
-                    ),
+                    border: Border.all(color: const Color(0xFFE6E9F1)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,9 +273,7 @@ class _VerificationLoadingScreenState
                     height: 210,
                     child: Stack(
                       alignment: Alignment.center,
-                      children: [
-                        _buildLoadingRing(),
-                      ],
+                      children: [_buildLoadingRing()],
                     ),
                   ),
                 ),
@@ -260,31 +282,22 @@ class _VerificationLoadingScreenState
 
                 // Verification steps
                 Column(
-                  children: List.generate(
-                    steps.length,
-                    (index) {
-                      final step = steps[index];
+                  children: List.generate(steps.length, (index) {
+                    final step = steps[index];
 
-                      return Column(
-                        children: [
-                          _VerificationStepRow(step: step),
-                          if (index == 0)
-                            const Padding(
-                              padding: EdgeInsets.only(
-                                top: 12,
-                                bottom: 18,
-                              ),
-                              child: Divider(
-                                color: Color(0xFFE6E9F1),
-                                height: 1,
-                              ),
-                            )
-                          else if (index < steps.length - 1)
-                            const SizedBox(height: 28),
-                        ],
-                      );
-                    },
-                  ),
+                    return Column(
+                      children: [
+                        _VerificationStepRow(step: step),
+                        if (index == 0)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 12, bottom: 18),
+                            child: Divider(color: Color(0xFFE6E9F1), height: 1),
+                          )
+                        else if (index < steps.length - 1)
+                          const SizedBox(height: 28),
+                      ],
+                    );
+                  }),
                 ),
 
                 const SizedBox(height: 24),
@@ -345,28 +358,19 @@ class _VerificationLoadingScreenState
   }
 }
 
-enum VerificationStatus {
-  done,
-  active,
-  pending,
-}
+enum VerificationStatus { done, active, pending }
 
 class VerificationStep {
   final String label;
   final VerificationStatus status;
 
-  const VerificationStep({
-    required this.label,
-    required this.status,
-  });
+  const VerificationStep({required this.label, required this.status});
 }
 
 class _VerificationStepRow extends StatelessWidget {
   final VerificationStep step;
 
-  const _VerificationStepRow({
-    required this.step,
-  });
+  const _VerificationStepRow({required this.step});
 
   @override
   Widget build(BuildContext context) {
@@ -374,11 +378,7 @@ class _VerificationStepRow extends StatelessWidget {
 
     switch (step.status) {
       case VerificationStatus.done:
-        indicator = const Icon(
-          Icons.check,
-          size: 20,
-          color: Color(0xFF22C55E),
-        );
+        indicator = const Icon(Icons.check, size: 20, color: Color(0xFF22C55E));
         break;
 
       case VerificationStatus.active:
@@ -432,11 +432,7 @@ class _LoadingBottomNavigation extends StatelessWidget {
       height: 83,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFF0F1F4),
-          ),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFF0F1F4))),
       ),
       child: SafeArea(
         top: false,
@@ -470,23 +466,13 @@ class _LoadingBottomNavigation extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.add,
-                      color: Colors.white,
-                      size: 32,
-                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 32),
                   ),
                 ),
               ),
             ),
-            const _LoadingNavItem(
-              icon: Icons.access_time,
-              label: 'Insights',
-            ),
-            const _LoadingNavItem(
-              icon: Icons.person_outline,
-              label: 'Profile',
-            ),
+            const _LoadingNavItem(icon: Icons.access_time, label: 'Insights'),
+            const _LoadingNavItem(icon: Icons.person_outline, label: 'Profile'),
           ],
         ),
       ),
@@ -507,19 +493,13 @@ class _LoadingNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active
-        ? const Color(0xFF6847EE)
-        : const Color(0xFFACAEB7);
+    final color = active ? const Color(0xFF6847EE) : const Color(0xFFACAEB7);
 
     return Expanded(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 24,
-            color: color,
-          ),
+          Icon(icon, size: 24, color: color),
           const SizedBox(height: 4),
           Text(
             label,
@@ -534,4 +514,3 @@ class _LoadingNavItem extends StatelessWidget {
     );
   }
 }
-

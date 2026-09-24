@@ -1,47 +1,23 @@
 import 'package:flutter/material.dart';
+import '../database/database_helper.dart';
+import '../database/verification_model.dart';
 import 'verify_news_screen.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
-  final List<HistoryItem> items = const [
-    HistoryItem(
-      title: 'Breaking: Govt plans new tax reform in July',
-      label: 'FAKE',
-      labelColor: Color(0xFFEF4444),
-      percent: '91%',
-    ),
-    HistoryItem(
-      title: 'AI image of Taj Mahal sunset view',
-      label: 'AI-GENERATED',
-      labelColor: Color(0xFF9333EA),
-      percent: '92%',
-    ),
-    HistoryItem(
-      title: 'Local train tickets free for all in August?',
-      label: 'UNCERTAIN',
-      labelColor: Color(0xFFF97316),
-      percent: '45%',
-    ),
-    HistoryItem(
-      title: 'New app gives free recharge to users',
-      label: 'REAL',
-      labelColor: Color(0xFF15803D),
-      percent: '79%',
-    ),
-    HistoryItem(
-      title: 'Election result shared online',
-      label: 'REAL',
-      labelColor: Color(0xFF15803D),
-      percent: '86%',
-    ),
-    HistoryItem(
-      title: 'Celebrity quote goes viral',
-      label: 'FAKE',
-      labelColor: Color(0xFFEF4444),
-      percent: '88%',
-    ),
-  ];
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  late Future<List<Verification>> _history;
+
+  @override
+  void initState() {
+    super.initState();
+    _history = DatabaseHelper.instance.getVerifications();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,18 +52,11 @@ class HistoryScreen extends StatelessWidget {
                 child: const Row(
                   children: [
                     SizedBox(width: 16),
-                    Icon(
-                      Icons.search,
-                      size: 20,
-                      color: Color(0xFF8C93A3),
-                    ),
+                    Icon(Icons.search, size: 20, color: Color(0xFF8C93A3)),
                     SizedBox(width: 10),
                     Text(
                       'Search your verifications...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF8C93A3),
-                      ),
+                      style: TextStyle(fontSize: 16, color: Color(0xFF8C93A3)),
                     ),
                   ],
                 ),
@@ -95,12 +64,27 @@ class HistoryScreen extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              // History items
-              ...items.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _HistoryCard(item: item),
-                ),
+              FutureBuilder<List<Verification>>(
+                future: _history,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final verifications = snapshot.data ?? [];
+                  if (verifications.isEmpty) {
+                    return const Text('No saved verifications yet.');
+                  }
+                  return Column(
+                    children: verifications
+                        .map(
+                          (verification) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _HistoryCard(verification: verification),
+                          ),
+                        )
+                        .toList(),
+                  );
+                },
               ),
             ],
           ),
@@ -113,35 +97,16 @@ class HistoryScreen extends StatelessWidget {
   }
 }
 
-class HistoryItem {
-  final String title;
-  final String label;
-  final Color labelColor;
-  final String percent;
-
-  const HistoryItem({
-    required this.title,
-    required this.label,
-    required this.labelColor,
-    required this.percent,
-  });
-}
-
 class _HistoryCard extends StatelessWidget {
-  final HistoryItem item;
+  final Verification verification;
 
-  const _HistoryCard({
-    required this.item,
-  });
+  const _HistoryCard({required this.verification});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        vertical: 16,
-        horizontal: 12,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -167,7 +132,7 @@ class _HistoryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.title,
+                  verification.claim,
                   style: const TextStyle(
                     fontSize: 16,
                     height: 1.15,
@@ -177,11 +142,15 @@ class _HistoryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  item.label,
+                  verification.verdict,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: item.labelColor,
+                    color: verification.verdict == 'REAL'
+                        ? const Color(0xFF15803D)
+                        : verification.verdict == 'FAKE'
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFFF97316),
                   ),
                 ),
               ],
@@ -192,7 +161,7 @@ class _HistoryCard extends StatelessWidget {
 
           // Confidence
           Text(
-            item.percent,
+            '${(verification.confidence * 100).round()}%',
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -214,11 +183,7 @@ class _HistoryBottomNavigation extends StatelessWidget {
       height: 92,
       decoration: const BoxDecoration(
         color: Color(0xFFFAFBFD),
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFE3E6F0),
-          ),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE3E6F0))),
       ),
       child: SafeArea(
         top: false,
@@ -228,18 +193,11 @@ class _HistoryBottomNavigation extends StatelessWidget {
               icon: Icons.home_outlined,
               label: 'Home',
               onTap: () {
-                Navigator.popUntil(
-                  context,
-                  (route) => route.isFirst,
-                );
+                Navigator.popUntil(context, (route) => route.isFirst);
               },
             ),
 
-            _NavItem(
-              icon: Icons.history,
-              label: 'History',
-              active: true,
-            ),
+            _NavItem(icon: Icons.history, label: 'History', active: true),
 
             // Central +
             Expanded(
@@ -285,15 +243,9 @@ class _HistoryBottomNavigation extends StatelessWidget {
               ),
             ),
 
-            _NavItem(
-              icon: Icons.access_time,
-              label: 'Insights',
-            ),
+            _NavItem(icon: Icons.access_time, label: 'Insights'),
 
-            _NavItem(
-              icon: Icons.person_outline,
-              label: 'Profile',
-            ),
+            _NavItem(icon: Icons.person_outline, label: 'Profile'),
           ],
         ),
       ),
@@ -316,26 +268,19 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active
-        ? const Color(0xFF633BDF)
-        : const Color(0xFF8C93A3);
+    final color = active ? const Color(0xFF633BDF) : const Color(0xFF8C93A3);
 
     final content = Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 28,
-          color: color,
-        ),
+        Icon(icon, size: 28, color: color),
         const SizedBox(height: 6),
         Text(
           label,
           style: TextStyle(
             fontSize: 17,
             height: 1,
-            fontWeight:
-                active ? FontWeight.w600 : FontWeight.normal,
+            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
             color: color,
           ),
         ),

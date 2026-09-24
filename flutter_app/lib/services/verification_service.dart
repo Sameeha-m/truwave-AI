@@ -3,15 +3,16 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class VerificationService {
+  static const String baseUrl = String.fromEnvironment(
+    'TRUWAVE_API_BASE_URL',
+    defaultValue: 'http://127.0.0.1:8000',
+  );
+
   Future<Map<String, dynamic>> verifyClaim(String claim) async {
     final response = await http.post(
-      Uri.parse('http://YOUR_FASTAPI_URL/verify'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'claim': claim,
-      }),
+      Uri.parse('$baseUrl/verify'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'claim': claim}),
     );
 
     if (response.statusCode != 200) {

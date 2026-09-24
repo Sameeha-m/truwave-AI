@@ -23,10 +23,19 @@ class VerificationSource {
     };
   }
 
-  factory VerificationSource.fromMap(Map<String, dynamic> map) {
+  factory VerificationSource.fromMap(Map<String, Object?> map) {
     return VerificationSource(
       id: map['id'] as int?,
       verificationId: map['verification_id'] as int,
+      name: map['name'] as String,
+      title: map['title'] as String,
+      url: map['url'] as String,
+    );
+  }
+
+  factory VerificationSource.fromApiMap(Map<String, dynamic> map) {
+    return VerificationSource(
+      verificationId: 0,
       name: map['name'] as String,
       title: map['title'] as String,
       url: map['url'] as String,
