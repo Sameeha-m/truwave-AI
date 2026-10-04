@@ -25,9 +25,39 @@ from backend.config import ConfigError, load_settings  # noqa: E402
 from backend.verifier import VerificationUnavailable, decide  # noqa: E402
 from evidence.base import ProviderError  # noqa: E402
 from evidence.google_factcheck import GoogleFactCheckProvider, parse_claims_payload  # noqa: E402
+from evidence.normalize import explain_relevance  # noqa: E402
 from evidence.service import EvidenceService  # noqa: E402
 
 DEFAULT_CLAIM = "Drinking bleach cures COVID-19"
+
+
+def format_relevance_report(claim: str, items: list, min_relevance: float) -> list[str]:
+    """One block per parsed review, INCLUDING the ones the relevance gate rejects.
+
+    Shows the same numbers the gate uses (it calls the same explain_relevance), so you can
+    see exactly why each fact-check passed or failed. Contains no secrets.
+    """
+    lines: list[str] = []
+    for n, item in enumerate(items, start=1):
+        b = explain_relevance(claim, item.reviewed_claim)
+        passed = b.score >= min_relevance
+        if passed:
+            reason = f"PASSED (score {b.score:.2f} >= {min_relevance})"
+        elif b.blocked_by_negation:
+            reason = (f"FAILED: negation guard. Word overlap alone would be {b.overlap_score:.2f}, "
+                      f"but only one side contains a negation, so the score was forced to 0")
+        else:
+            reason = f"FAILED: word overlap {b.score:.2f} is below {min_relevance}"
+        lines += [
+            f"[{n}] {item.publisher_name}  |  rating: {item.raw_rating!r}  ->  stance {item.stance.value}",
+            f"    reviewed claim : {item.reviewed_claim!r}",
+            f"    shared words   : {list(b.shared)}",
+            f"    only in yours  : {list(b.only_in_claim)}",
+            f"    only in theirs : {list(b.only_in_reviewed)}",
+            f"    negation words : yours={list(b.claim_negators)}  theirs={list(b.reviewed_negators)}",
+            f"    result         : {reason}",
+        ]
+    return lines
 
 HINTS = {
     "no_api_key": "FACTCHECK_API_KEY was not found. Create a file named .env in the repo root "
@@ -62,6 +92,12 @@ async def main() -> int:
     parser.add_argument("--save", action="store_true", help="save the raw response as a test recording")
     args = parser.parse_args()
 
+    # Windows consoles often cannot print every character fact-checkers use (curly quotes, other scripts).
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except AttributeError:
+        pass
+
     try:
         settings = load_settings()
     except ConfigError as exc:
@@ -71,7 +107,7 @@ async def main() -> int:
     key = settings.factcheck_api_key
     print(f"Claim: {args.claim!r}")
     if key:
-        print(f"Key:   found ({len(key)} characters, starts with {key[:4]!r}); value is never printed")
+        print(f"Key:   found ({len(key)} characters); the value is never printed")
     else:
         print("Key:   NOT FOUND")
 
@@ -116,9 +152,10 @@ async def main() -> int:
     for item in result.items:
         print(f"  - [{item.stance.value:8}] {item.publisher_name} ({item.tier.value.lower()}) "
               f"rating={item.raw_rating!r} relevance={item.relevance:.2f}\n      {item.title}\n      {item.url}")
-    if raw_items and not result.items:
-        print("  (reviews were returned but none matched the claim closely enough; "
-              "lower EVIDENCE_MIN_RELEVANCE to inspect them)")
+    if raw_items:
+        print("\nWhy each review passed or failed the relevance gate:")
+        for line in format_relevance_report(args.claim, raw_items, settings.evidence_min_relevance):
+            print("  " + line)
 
     print("\nWhat the verification engine would say with NO ML prediction:")
     try:

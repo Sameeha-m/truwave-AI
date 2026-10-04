@@ -2,7 +2,8 @@ import pytest
 
 from evidence.base import EvidenceItem, SourceTier, Stance
 from evidence.normalize import (
-    canonical_url, claim_key, dedupe, normalize_rating, publisher_tier, relevance, site_root,
+    canonical_url, claim_key, dedupe, explain_relevance, normalize_rating, publisher_tier, relevance,
+    site_root,
 )
 
 
@@ -43,6 +44,44 @@ def test_relevance_both_negated_still_matches():
 def test_relevance_empty_inputs():
     assert relevance("", "anything") == 0.0
     assert relevance("the and of", "the and of") == 0.0  # only stopwords
+
+
+# ---- explain_relevance: the diagnostic must always agree with the real gate -------------
+_PAIRS = [
+    ("Drinking bleach cures COVID-19", "Drinking bleach cures COVID-19"),
+    ("Drinking bleach cures COVID-19", "Drinking bleach does not cure COVID-19"),
+    ("Drinking bleach cures COVID-19", "Disinfectants such as bleach can kill the virus that causes COVID-19"),
+    ("Vaccines do not cause autism", "Claim: vaccines don't cause autism"),
+    ("Vaccines cause autism", "Vaccines do not cause autism"),
+    ("", "anything"),
+    ("the and of", "the and of"),
+]
+
+
+@pytest.mark.parametrize("claim,reviewed", _PAIRS)
+def test_explain_relevance_score_always_equals_relevance(claim, reviewed):
+    assert explain_relevance(claim, reviewed).score == relevance(claim, reviewed)
+
+
+def test_explain_relevance_shows_why_negation_blocked_a_full_overlap():
+    b = explain_relevance("Drinking bleach cures COVID-19", "Drinking bleach does not cure COVID-19")
+    assert b.blocked_by_negation is True
+    assert b.score == 0.0
+    assert b.overlap_score == 1.0                     # every content word is shared
+    assert b.claim_negators == () and b.reviewed_negators == ("not",)
+    assert b.only_in_claim == () and b.only_in_reviewed == ()
+
+
+def test_explain_relevance_lists_shared_and_unshared_words():
+    b = explain_relevance("Drinking bleach cures COVID-19", "Disinfectants such as bleach can kill COVID-19")
+    assert b.blocked_by_negation is False
+    assert b.shared == ("19", "bleach", "covid")
+    assert b.only_in_claim == ("cure", "drinking")
+    assert "disinfectant" in b.only_in_reviewed and "kill" in b.only_in_reviewed
+
+
+def test_explain_relevance_normalises_contractions_when_listing_negators():
+    assert explain_relevance("x", "Bleach doesn't cure it").reviewed_negators == ("doesnt",)
 
 
 def test_claim_key_ignores_case_and_punctuation():

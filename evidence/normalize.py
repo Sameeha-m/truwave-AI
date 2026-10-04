@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import math
 import re
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -95,6 +96,38 @@ def has_negation(text: str) -> bool:
     return any(w in _NEGATORS for w in _words(text))
 
 
+def negators_in(text: str) -> tuple[str, ...]:
+    """The negation words found in `text` (normalized, de-duplicated, sorted)."""
+    return tuple(sorted({w for w in _words(text) if w in _NEGATORS}))
+
+
+@dataclass(frozen=True)
+class RelevanceBreakdown:
+    """Everything behind one relevance score. Used by diagnostics; `relevance()` returns `.score`."""
+
+    score: float                      # the value the relevance gate actually uses
+    overlap_score: float              # the word-overlap score BEFORE the negation guard
+    shared: tuple[str, ...]           # content words in both texts
+    only_in_claim: tuple[str, ...]    # content words only in the user's claim
+    only_in_reviewed: tuple[str, ...] # content words only in the fact-checker's claim text
+    claim_negators: tuple[str, ...]
+    reviewed_negators: tuple[str, ...]
+    blocked_by_negation: bool         # True when the guard forced `score` to 0
+
+
+def explain_relevance(claim: str, reviewed_claim: str) -> RelevanceBreakdown:
+    a, b = content_tokens(claim), content_tokens(reviewed_claim)
+    claim_neg, reviewed_neg = negators_in(claim), negators_in(reviewed_claim)
+    shared, only_a, only_b = tuple(sorted(a & b)), tuple(sorted(a - b)), tuple(sorted(b - a))
+    if not a or not b:
+        return RelevanceBreakdown(0.0, 0.0, shared, only_a, only_b, claim_neg, reviewed_neg, False)
+    overlap = len(a & b) / math.sqrt(len(a) * len(b))
+    blocked = bool(claim_neg) != bool(reviewed_neg)
+    return RelevanceBreakdown(
+        0.0 if blocked else overlap, overlap, shared, only_a, only_b, claim_neg, reviewed_neg, blocked
+    )
+
+
 def relevance(claim: str, reviewed_claim: str) -> float:
     """0..1 similarity between the user's claim and the claim a fact-checker reviewed.
 
@@ -103,12 +136,7 @@ def relevance(claim: str, reviewed_claim: str) -> float:
     a rating for one must never be applied to the opposite statement. This guard is
     crude (it will also drop some valid matches); that errs on the safe side.
     """
-    a, b = content_tokens(claim), content_tokens(reviewed_claim)
-    if not a or not b:
-        return 0.0
-    if has_negation(claim) != has_negation(reviewed_claim):
-        return 0.0
-    return len(a & b) / math.sqrt(len(a) * len(b))
+    return explain_relevance(claim, reviewed_claim).score
 
 
 def claim_key(claim: str) -> str:
