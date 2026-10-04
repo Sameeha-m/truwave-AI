@@ -14,6 +14,12 @@ class Stance(str, Enum):
     UNRATED = "UNRATED"    # no usable rating (satire, unknown wording, other language)
 
 
+class RelevanceTier(str, Enum):
+    DIRECT = "DIRECT"       # may inform the verdict
+    RELATED = "RELATED"     # context only; never proof of this claim
+    UNRELATED = "UNRELATED" # discarded by EvidenceService
+
+
 class SourceTier(str, Enum):
     KNOWN = "KNOWN"      # publisher is in evidence/publishers.json
     UNKNOWN = "UNKNOWN"
@@ -31,6 +37,7 @@ class EvidenceItem:
     reviewed_claim: str       # the claim text the fact-checker actually reviewed
     tier: SourceTier
     relevance: float = 0.0    # 0..1 match to the user's claim; filled in by EvidenceService
+    relevance_tier: RelevanceTier = RelevanceTier.DIRECT
     review_date: date | None = None
     snippet: str | None = None
 

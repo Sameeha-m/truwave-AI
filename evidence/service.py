@@ -19,9 +19,10 @@ from .base import (
     EvidenceResult,
     ProviderError,
     ProviderReport,
+    RelevanceTier,
     SourceTier,
 )
-from .normalize import dedupe, relevance
+from .normalize import dedupe, relevance_tier
 
 logger = logging.getLogger("truwave.evidence")
 
@@ -50,9 +51,14 @@ class EvidenceService:
         for name, items, report in outcomes:
             reports[name] = report
             for item in items:
-                scored.append((name, replace(item, relevance=relevance(claim, item.reviewed_claim))))
+                tier, score = relevance_tier(claim, item.reviewed_claim)
+                scored.append((name, replace(item, relevance=score, relevance_tier=tier)))
 
-        relevant = [(n, i) for n, i in scored if i.relevance >= self._min_relevance]
+        relevant = [
+            (n, i) for n, i in scored
+            if (i.relevance_tier == RelevanceTier.DIRECT and i.relevance >= self._min_relevance)
+            or i.relevance_tier == RelevanceTier.RELATED
+        ]
         relevant.sort(key=lambda pair: _rank_key(pair[1]))
         # Deduplicate across providers, remembering which provider each survivor came from.
         survivors = dedupe([i for _, i in relevant])[: self._max_items]

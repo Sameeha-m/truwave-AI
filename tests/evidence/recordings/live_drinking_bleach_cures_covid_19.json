@@ -1,0 +1,53 @@
+{
+  "claims": [
+    {
+      "text": "\"MMS (chlorine dioxide), can be very effective in both preventing and eradicating the coronavirus.\"",
+      "claimant": "Jim Humble",
+      "claimDate": "2020-01-27T00:00:00Z",
+      "claimReview": [
+        {
+          "publisher": {
+            "name": "FactCheck.org",
+            "site": "factcheck.org"
+          },
+          "url": "https://www.factcheck.org/2020/02/fake-coronavirus-cures-part-1-mms-is-industrial-bleach/",
+          "title": "Fake Coronavirus Cures, Part 1: MMS is Industrial Bleach",
+          "textualRating": "False",
+          "languageCode": "en"
+        }
+      ]
+    },
+    {
+      "text": "Former U.S. President Donald Trump once suggested that people inject bleach or other disinfectants into their bodies to treat COVID-19.",
+      "claimReview": [
+        {
+          "publisher": {
+            "name": "Snopes.com",
+            "site": "snopes.com"
+          },
+          "url": "https://www.snopes.com/fact-check/trump-inject-bleach-covid-19/",
+          "title": "Trump Didn't Tell People to 'Inject Bleach' for COVID-19. But Here's ...",
+          "reviewDate": "2024-07-19T16:52:33Z",
+          "textualRating": "Mostly False",
+          "languageCode": "en"
+        }
+      ]
+    },
+    {
+      "text": "Former U.S. President Donald Trump once suggested people inject bleach or other disinfectants into their bodies to treat COVID-19.",
+      "claimReview": [
+        {
+          "publisher": {
+            "name": "Snopes.com",
+            "site": "snopes.com"
+          },
+          "url": "https://www.snopes.com/fact-check/donald-trump-inject-bleach-covid/",
+          "title": "Trump Didn't Advise People to 'Inject Bleach' to Treat COVID-19. But ...",
+          "reviewDate": "2024-07-24T16:33:44Z",
+          "textualRating": "Mostly False",
+          "languageCode": "en"
+        }
+      ]
+    }
+  ]
+}

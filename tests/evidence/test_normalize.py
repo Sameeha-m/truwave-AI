@@ -1,9 +1,9 @@
 import pytest
 
-from evidence.base import EvidenceItem, SourceTier, Stance
+from evidence.base import EvidenceItem, RelevanceTier, SourceTier, Stance
 from evidence.normalize import (
     canonical_url, claim_key, dedupe, explain_relevance, normalize_rating, publisher_tier, relevance,
-    site_root,
+    site_root, relevance_tier,
 )
 
 
@@ -39,6 +39,15 @@ def test_relevance_negation_mismatch_is_zero():
 
 def test_relevance_both_negated_still_matches():
     assert relevance("Vaccines do not cause autism", "Claim: vaccines don't cause autism") >= 0.5
+
+
+def test_relevance_tiers_aliases_and_negation_safety():
+    assert relevance_tier("Drinking bleach cures COVID-19", "Drinking bleach cures COVID-19")[0] == RelevanceTier.DIRECT
+    assert relevance_tier("Drinking bleach cures COVID-19",
+                          "Injecting disinfectant may treat coronavirus")[0] == RelevanceTier.RELATED
+    assert relevance_tier("Drinking bleach cures COVID-19",
+                          "Bleach does not cure coronavirus")[0] == RelevanceTier.UNRELATED
+    assert relevance_tier("Drinking bleach cures COVID-19", "Penguins cross the Atlantic")[0] == RelevanceTier.UNRELATED
 
 
 def test_relevance_empty_inputs():

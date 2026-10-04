@@ -1,11 +1,12 @@
 """Verification engine tests: the R1-R9 rule table, run end to end through
 Verifier -> EvidenceService -> FixtureEvidenceProvider (no network)."""
 import time
+from dataclasses import replace
 
 import pytest
 
 from backend.verifier import Decision, Verdict, VerificationUnavailable, Verifier, assess_evidence, decide
-from evidence.base import EvidenceItem, EvidenceResult, ProviderReport, SourceTier, Stance
+from evidence.base import EvidenceItem, EvidenceResult, ProviderReport, RelevanceTier, SourceTier, Stance
 from evidence.fixture import FixtureEvidenceProvider
 from evidence.normalize import normalize_rating
 from evidence.service import EvidenceService
@@ -190,3 +191,12 @@ def test_only_unrated_items_count_as_no_evidence():
 def test_partial_evidence_failure_is_recorded():
     d = decide(None, _ev(_it("a.example", "False", SourceTier.KNOWN), _it("b.example", "False"), partial=True))
     assert d.verdict == Verdict.FAKE and "evidence_partial" in d.degraded_reasons
+
+
+def test_related_rated_evidence_cannot_establish_a_verdict():
+    related = _it("snopes.com", "Mostly False", SourceTier.KNOWN)
+    related = replace(related, relevance_tier=RelevanceTier.RELATED)
+    decision = decide(MLResult(MLLabel.FAKE, 0.99, "mock/v1", is_mock=True), _ev(related))
+    assert decision.verdict == Verdict.UNCERTAIN
+    assert decision.rule_id == "R8_NONE"
+    assert "related context" in " ".join(decision.findings)

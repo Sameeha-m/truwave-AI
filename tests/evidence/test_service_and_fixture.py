@@ -3,10 +3,11 @@ import asyncio
 import pytest
 
 from evidence.base import (
-    EvidenceItem, ProviderBadResponse, ProviderError, ProviderTimeout, SourceTier, Stance,
+    EvidenceItem, ProviderBadResponse, ProviderError, ProviderTimeout, RelevanceTier, SourceTier, Stance,
 )
 from evidence.fixture import FixtureEvidenceProvider
 from evidence.service import EvidenceService
+from backend.verifier import Verdict, decide
 from tests.helpers import run
 
 
@@ -139,3 +140,20 @@ def test_max_items_cap():
 def test_service_requires_a_provider():
     with pytest.raises(ValueError):
         EvidenceService([])
+
+
+def test_bleach_covid_reviews_are_related_context_not_direct_matches():
+    claim = "Drinking bleach cures COVID-19"
+    items = [
+        item("https://factcheck.org/mms", reviewed=
+             "MMS chlorine dioxide can be effective in preventing and eradicating coronavirus",
+             site="factcheck.org", name="FactCheck.org", title="MMS claim"),
+        item("https://snopes.com/injection", reviewed=
+             "Donald Trump suggested people inject bleach or other disinfectants to treat COVID-19",
+             site="snopes.com", name="Snopes", title="Trump disinfectant claim"),
+    ]
+    result = gather(claim, Static("google_factcheck", items))
+    assert len(result.items) == 2
+    assert all(i.relevance_tier == RelevanceTier.RELATED for i in result.items)
+    decision = decide(None, result)
+    assert decision.verdict == Verdict.UNCERTAIN

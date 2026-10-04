@@ -15,7 +15,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-from evidence.base import EvidenceItem, EvidenceResult, Stance, SourceTier
+from evidence.base import EvidenceItem, EvidenceResult, RelevanceTier, Stance, SourceTier
 from evidence.normalize import publisher_identity
 from evidence.service import EvidenceService
 from ml.base import MLClassifier, MLLabel, MLResult
@@ -83,7 +83,10 @@ class EvidenceAssessment:
 
 
 def assess_evidence(evidence: EvidenceResult) -> EvidenceAssessment:
-    rated = [i for i in evidence.items if i.stance != Stance.UNRATED]
+    # Related reviews remain available to the explanation, but only DIRECT
+    # reviews can establish the claim's verdict.
+    rated = [i for i in evidence.items
+             if i.relevance_tier == RelevanceTier.DIRECT and i.stance != Stance.UNRATED]
     refutes = [i for i in rated if i.stance == Stance.REFUTES]
     supports = [i for i in rated if i.stance == Stance.SUPPORTS]
     mixed = [i for i in rated if i.stance == Stance.MIXED]
@@ -117,6 +120,8 @@ def ml_stance(ml: MLResult | None, threshold: float) -> Verdict | None:
 
 # ---------------------------------------------------------------- wording
 def _finding(item: EvidenceItem) -> str:
+    if item.relevance_tier == RelevanceTier.RELATED:
+        return f"{item.publisher_name} published related context, but reviewed a different claim."
     if item.raw_rating:
         return f"{item.publisher_name} rated a matching claim “{item.raw_rating}”."
     return f"{item.publisher_name} published a fact-check of a matching claim."

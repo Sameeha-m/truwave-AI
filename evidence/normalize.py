@@ -12,7 +12,7 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from .base import EvidenceItem, SourceTier, Stance
+from .base import EvidenceItem, RelevanceTier, SourceTier, Stance
 
 PUBLISHERS_FILE = Path(__file__).with_name("publishers.json")
 
@@ -75,6 +75,20 @@ _NEGATORS = frozenset(
 )
 _WORD_RE = re.compile(r"[^\W_]+", re.UNICODE)
 
+# Conservative, domain-specific equivalences. These normalize surface forms only;
+# they do not turn topic similarity into proof of the exact claim.
+_ALIASES = {
+    "covid": "covid", "covid19": "covid", "coronavirus": "covid",
+    "disinfectant": "disinfectant", "disinfectants": "disinfectant",
+    "bleach": "disinfectant", "mms": "disinfectant", "chlorine": "disinfectant",
+    "dioxide": "disinfectant", "cure": "cure", "cures": "cure", "curing": "cure",
+    "treat": "cure", "treats": "cure", "treatment": "cure", "treating": "cure",
+    "drink": "ingest", "drinking": "ingest", "inject": "ingest", "injected": "ingest",
+    "ingest": "ingest", "ingesting": "ingest",
+}
+_TOPIC_WORDS = frozenset({"covid", "disinfectant", "cure", "ingest", "virus", "viral"})
+_SENSITIVE_ACTIONS = frozenset({"cure", "cures", "curing", "drink", "drinking", "ingest", "ingesting", "inject", "injected"})
+
 
 def _words(text: str) -> list[str]:
     text = text.lower().replace("'", "").replace("’", "")
@@ -90,6 +104,16 @@ def _stem(word: str) -> str:
 
 def content_tokens(text: str) -> set[str]:
     return {_stem(w) for w in _words(text) if w not in _STOPWORDS and w not in _NEGATORS}
+
+
+def _concept_tokens(text: str) -> set[str]:
+    concepts = set()
+    for word in _words(text):
+        if word in _STOPWORDS or word in _NEGATORS:
+            continue
+        stemmed = _stem(word)
+        concepts.add(_ALIASES.get(word, _ALIASES.get(stemmed, stemmed)))
+    return concepts
 
 
 def has_negation(text: str) -> bool:
@@ -137,6 +161,35 @@ def relevance(claim: str, reviewed_claim: str) -> float:
     crude (it will also drop some valid matches); that errs on the safe side.
     """
     return explain_relevance(claim, reviewed_claim).score
+
+
+def relevance_tier(claim: str, reviewed_claim: str) -> tuple[RelevanceTier, float]:
+    """Classify match conservatively; RELATED results provide context only.
+
+    DIRECT requires strong normalized overlap. RELATED requires at least two
+    shared domain topic concepts, preventing a lone broad word (e.g. COVID) from
+    retaining an otherwise unrelated review. The existing negation guard applies
+    to both tiers.
+    """
+    breakdown = explain_relevance(claim, reviewed_claim)
+    if breakdown.blocked_by_negation:
+        return RelevanceTier.UNRELATED, 0.0
+    a_raw, b_raw = content_tokens(claim), content_tokens(reviewed_claim)
+    a, b = _concept_tokens(claim), _concept_tokens(reviewed_claim)
+    if not a or not b:
+        return RelevanceTier.UNRELATED, 0.0
+    score = len(a & b) / math.sqrt(len(a) * len(b))
+    # A strong broad-topic overlap alone is insufficient. Require two literal
+    # shared claim terms (or every term of a very short claim) for DIRECT.
+    literal_required = min(2, len(a_raw))
+    same_action = bool((a_raw & b_raw) & _SENSITIVE_ACTIONS)
+    sensitive_claim = bool(a_raw & _SENSITIVE_ACTIONS)
+    if score >= 0.50 and len(a_raw & b_raw) >= literal_required and (same_action or not sensitive_claim):
+        return RelevanceTier.DIRECT, score
+    shared_topics = (a & b) & _TOPIC_WORDS
+    if len(shared_topics) >= 2:
+        return RelevanceTier.RELATED, score
+    return RelevanceTier.UNRELATED, score
 
 
 def claim_key(claim: str) -> str:
