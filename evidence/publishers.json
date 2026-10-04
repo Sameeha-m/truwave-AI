@@ -1,0 +1,26 @@
+{
+  "_comment": "STARTER LIST of fact-check publishers treated as KNOWN. Not authoritative and not exhaustive: review it against the IFCN signatories list (https://ifcn.poynter.org) and edit freely. Matching is by host suffix, so 'afp.com' also matches 'factcheck.afp.com'.",
+  "known_sites": [
+    "politifact.com",
+    "snopes.com",
+    "factcheck.org",
+    "reuters.com",
+    "apnews.com",
+    "afp.com",
+    "fullfact.org",
+    "bbc.com",
+    "bbc.co.uk",
+    "leadstories.com",
+    "usatoday.com",
+    "washingtonpost.com",
+    "checkyourfact.com",
+    "africacheck.org",
+    "boomlive.in",
+    "altnews.in",
+    "factly.in",
+    "newschecker.in",
+    "vishvasnews.com",
+    "thequint.com",
+    "indiatoday.in"
+  ]
+}

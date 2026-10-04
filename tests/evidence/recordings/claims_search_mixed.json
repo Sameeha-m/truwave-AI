@@ -1,0 +1,11 @@
+{
+  "claims": [
+    {
+      "text": "Coffee prevents all forms of cancer",
+      "claimReview": [
+        {"publisher": {"name": "Example Fact Check One", "site": "example-factcheck-one.example"}, "url": "https://example-factcheck-one.example/coffee", "title": "Coffee and cancer: overstated", "textualRating": "False"},
+        {"publisher": {"name": "Example Fact Check Two", "site": "example-factcheck-two.example"}, "url": "https://example-factcheck-two.example/coffee", "title": "Coffee and cancer: supported", "textualRating": "True"}
+      ]
+    }
+  ]
+}

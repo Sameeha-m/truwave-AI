@@ -1,0 +1,62 @@
+{
+  "_warning": "FIXTURE DATA FOR TESTS AND DEMOS ONLY. These are invented fact-checks from fictional publishers (.example domains). They are not real fact-checks and are never used when EVIDENCE_PROVIDER=google.",
+  "claims": {
+    "Drinking bleach cures viral infections": {
+      "_scenario": "REFUTED by two known publishers",
+      "items": [
+        {"publisher_name": "Demo Fact Check A (fixture)", "publisher_site": "demo-factcheck-a.example", "tier": "KNOWN", "title": "Demo: bleach is not a cure", "url": "https://demo-factcheck-a.example/bleach", "raw_rating": "False"},
+        {"publisher_name": "Demo Fact Check B (fixture)", "publisher_site": "demo-factcheck-b.example", "tier": "KNOWN", "title": "Demo: no, bleach does not treat infections", "url": "https://demo-factcheck-b.example/bleach-infections", "raw_rating": "Pants on Fire", "reviewed_claim": "Drinking bleach cures infections"}
+      ]
+    },
+    "The Earth revolves around the Sun": {
+      "_scenario": "SUPPORTED by two known publishers",
+      "items": [
+        {"publisher_name": "Demo Fact Check A (fixture)", "publisher_site": "demo-factcheck-a.example", "tier": "KNOWN", "title": "Demo: Earth orbits the Sun", "url": "https://demo-factcheck-a.example/earth-orbit", "raw_rating": "True"},
+        {"publisher_name": "Demo Fact Check B (fixture)", "publisher_site": "demo-factcheck-b.example", "tier": "KNOWN", "title": "Demo: yes, the Earth revolves around the Sun", "url": "https://demo-factcheck-b.example/earth-sun", "raw_rating": "Correct"}
+      ]
+    },
+    "The Great Wall of China is visible from space with the naked eye": {
+      "_scenario": "REFUTED by two known publishers (use with an ML mock that says REAL to demo disagreement)",
+      "items": [
+        {"publisher_name": "Demo Fact Check A (fixture)", "publisher_site": "demo-factcheck-a.example", "tier": "KNOWN", "title": "Demo: Great Wall is not visible from space", "url": "https://demo-factcheck-a.example/great-wall", "raw_rating": "Mostly False"},
+        {"publisher_name": "Demo Fact Check B (fixture)", "publisher_site": "demo-factcheck-b.example", "tier": "KNOWN", "title": "Demo: the Great Wall myth", "url": "https://demo-factcheck-b.example/great-wall-myth", "raw_rating": "False"}
+      ]
+    },
+    "Humans can breathe normally underwater without equipment": {
+      "_scenario": "REFUTED by a single known publisher",
+      "items": [
+        {"publisher_name": "Demo Fact Check A (fixture)", "publisher_site": "demo-factcheck-a.example", "tier": "KNOWN", "title": "Demo: humans cannot breathe underwater", "url": "https://demo-factcheck-a.example/underwater", "raw_rating": "False", "reviewed_claim": "Humans can breathe underwater without equipment"}
+      ]
+    },
+    "Coffee prevents all forms of cancer": {
+      "_scenario": "CONFLICTING: one known publisher says false, another says true",
+      "items": [
+        {"publisher_name": "Demo Fact Check A (fixture)", "publisher_site": "demo-factcheck-a.example", "tier": "KNOWN", "title": "Demo: coffee and cancer, overstated", "url": "https://demo-factcheck-a.example/coffee", "raw_rating": "False"},
+        {"publisher_name": "Demo Fact Check B (fixture)", "publisher_site": "demo-factcheck-b.example", "tier": "KNOWN", "title": "Demo: coffee and cancer, supported", "url": "https://demo-factcheck-b.example/coffee-cancer", "raw_rating": "True"}
+      ]
+    },
+    "Vitamin C cures the common cold": {
+      "_scenario": "MIXED only: two partly-true ratings",
+      "items": [
+        {"publisher_name": "Demo Fact Check A (fixture)", "publisher_site": "demo-factcheck-a.example", "tier": "KNOWN", "title": "Demo: vitamin C and colds", "url": "https://demo-factcheck-a.example/vitamin-c", "raw_rating": "Half True"},
+        {"publisher_name": "Demo Fact Check B (fixture)", "publisher_site": "demo-factcheck-b.example", "tier": "KNOWN", "title": "Demo: vitamin C needs context", "url": "https://demo-factcheck-b.example/vitamin-c-cold", "raw_rating": "Missing context"}
+      ]
+    },
+    "A new tax on streaming subscriptions starts next month": {
+      "_scenario": "WEAK: a single publisher that is not in the known list",
+      "items": [
+        {"publisher_name": "Demo Unknown Checker (fixture)", "publisher_site": "demo-unknown.example", "tier": "UNKNOWN", "title": "Demo: no new streaming tax", "url": "https://demo-unknown.example/streaming-tax", "raw_rating": "False"}
+      ]
+    },
+    "Fixture claim with unrelated results": {
+      "_scenario": "provider answers, but nothing is relevant (dropped by the relevance gate)",
+      "items": [
+        {"publisher_name": "Demo Fact Check A (fixture)", "publisher_site": "demo-factcheck-a.example", "tier": "KNOWN", "title": "Demo: something else entirely", "url": "https://demo-factcheck-a.example/unrelated", "raw_rating": "False", "reviewed_claim": "Penguins can fly across the Atlantic"}
+      ]
+    },
+    "Fixture claim that triggers a provider error": {"_scenario": "provider failure", "behavior": "error"},
+    "Fixture claim that triggers a timeout": {"_scenario": "provider timeout", "behavior": "timeout"},
+    "Fixture claim that triggers a rate limit": {"_scenario": "provider rate limit", "behavior": "rate_limited"},
+    "Fixture claim that triggers a malformed response": {"_scenario": "malformed provider response", "behavior": "bad_response"}
+  }
+}

@@ -1,5 +1,12 @@
 # Python
 backend/.venv/
+.venv/
+.env
+.env.*
+!.env.example
+backend/APIkey.env
+__pycache__/
+.pytest_cache/
 backend/__pycache__/
 *.pyc
 

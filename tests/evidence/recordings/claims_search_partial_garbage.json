@@ -1,0 +1,12 @@
+{
+  "claims": [
+    "not an object",
+    {"text": "no reviews key at all"},
+    {"text": "Reviews with junk", "claimReview": [
+      42,
+      {"publisher": {"name": "No URL Publisher"}, "title": "missing url", "textualRating": "False"},
+      {"publisher": "not-an-object", "url": "https://junk.example/a", "title": "", "textualRating": "False"},
+      {"publisher": {"name": "Good Publisher", "site": "good.example"}, "url": "https://good.example/ok", "title": "Fine", "textualRating": "Mostly True", "reviewDate": "not-a-date"}
+    ]}
+  ]
+}

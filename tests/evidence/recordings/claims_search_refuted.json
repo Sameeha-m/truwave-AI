@@ -1,0 +1,55 @@
+{
+  "claims": [
+    {
+      "text": "Posts claim that drinking bleach cures viral infections",
+      "claimant": "Social media posts",
+      "claimDate": "2024-03-02T00:00:00Z",
+      "claimReview": [
+        {
+          "publisher": {"name": "Example Fact Check One", "site": "example-factcheck-one.example"},
+          "url": "https://www.example-factcheck-one.example/bleach?utm_source=feed",
+          "title": "No, drinking bleach does not cure infections",
+          "reviewDate": "2024-03-05T10:12:00Z",
+          "textualRating": "False",
+          "languageCode": "en"
+        }
+      ]
+    },
+    {
+      "text": "Drinking bleach cures viral infections",
+      "claimant": "Viral chain message",
+      "claimDate": "2023-11-20T00:00:00Z",
+      "claimReview": [
+        {
+          "publisher": {"name": "Example Fact Check One", "site": "example-factcheck-one.example"},
+          "url": "https://example-factcheck-one.example/bleach",
+          "title": "No, drinking bleach does not cure infections",
+          "reviewDate": "2024-03-05T10:12:00Z",
+          "textualRating": "False",
+          "languageCode": "en"
+        },
+        {
+          "publisher": {"name": "Example Fact Check Two", "site": "example-factcheck-two.example"},
+          "url": "https://example-factcheck-two.example/claims/bleach-cure",
+          "title": "Bleach is a poison, not a treatment",
+          "reviewDate": "2023-11-28T00:00:00Z",
+          "textualRating": "Pants on Fire",
+          "languageCode": "en"
+        }
+      ]
+    },
+    {
+      "text": "Eine Behauptung ueber etwas ganz anderes",
+      "claimReview": [
+        {
+          "publisher": {"name": "Beispiel Faktencheck", "site": "faktencheck.example"},
+          "url": "https://faktencheck.example/anderes",
+          "title": "Anderes Thema",
+          "textualRating": "Falsch",
+          "languageCode": "de"
+        }
+      ]
+    }
+  ],
+  "nextPageToken": "CAoQAA"
+}
