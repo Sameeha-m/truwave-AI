@@ -15,10 +15,10 @@ def test_defaults():
 
 
 def test_reads_expected_variable_names():
-    s = settings(FACTCHECK_API_KEY="  abc123  ", ML_PROVIDER="DistilBERT", EVIDENCE_PROVIDER="fixture",
+    s = settings(FACTCHECK_API_KEY="  abc123  ", ML_PROVIDER="TFIDF", EVIDENCE_PROVIDER="fixture",
                  EVIDENCE_MIN_RELEVANCE="0.6", MAX_SOURCES="3")
     assert s.factcheck_api_key == "abc123" and s.factcheck_key_configured
-    assert (s.ml_provider, s.evidence_provider) == ("distilbert", "fixture")
+    assert (s.ml_provider, s.evidence_provider) == ("tfidf", "fixture")
     assert s.evidence_min_relevance == 0.6 and s.max_sources == 3
 
 

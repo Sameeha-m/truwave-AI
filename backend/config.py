@@ -12,7 +12,7 @@ from typing import Mapping
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-ML_PROVIDERS = ("mock", "distilbert")
+ML_PROVIDERS = ("mock", "tfidf")
 EVIDENCE_PROVIDERS = ("google", "fixture")
 
 
@@ -35,6 +35,7 @@ class Settings:
     evidence_min_relevance: float = 0.5
     ml_timeout_s: float = 5.0
     ml_strong_threshold: float = 0.80
+    ml_model_path: Path = REPO_ROOT / "ml" / "artifacts" / "fever_tfidf_logreg.joblib"
     max_sources: int = 5
 
     @property
@@ -110,5 +111,8 @@ def load_settings(
         evidence_min_relevance=_read_float(environ, "EVIDENCE_MIN_RELEVANCE", 0.5, 0.0, 1.0),
         ml_timeout_s=_read_float(environ, "ML_TIMEOUT_S", 5.0, 0.5, 60.0),
         ml_strong_threshold=_read_float(environ, "ML_STRONG_THRESHOLD", 0.80, 0.5, 1.0),
+        ml_model_path=Path(
+            (environ.get("ML_MODEL_PATH") or str(REPO_ROOT / "ml" / "artifacts" / "fever_tfidf_logreg.joblib")).strip()
+        ),
         max_sources=_read_int(environ, "MAX_SOURCES", 5, 1, 10),
     )

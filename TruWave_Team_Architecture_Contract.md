@@ -7,7 +7,7 @@ TruWave helps users verify suspicious news/claims and check whether images may b
 
 Core UX: **Result → Confidence → Evidence → Explanation**
 
-Users should not need to understand DistilBERT, APIs, model probabilities, or database architecture.
+Users should not need to understand the classifier, APIs, model scores, or database architecture.
 
 ## 2. Core verification outcomes
 News verification has three first-class outcomes:
@@ -22,22 +22,15 @@ Confidence means **TruWave's confidence in its classification**, not the percent
 ## 3. Intended architecture
 
 ```text
-                 TRUWAVE
-                    |
-              Flutter App
-               /                     /                 Local SQLite    FastAPI
-            |              |
-        History       Verification API
-                           |
-                 +---------+---------+
-                 |                   |
-             DistilBERT        Evidence / Fact-check
-                 |                   |
-                 +---------+---------+
-                           |
-                      Result JSON
-                           |
-                        Flutter
+Flutter App ──> FastAPI: POST /verify ──> Verification engine
+                                            ├── TF-IDF + Logistic Regression
+                                            └── Evidence / fact-check providers
+                                                     │
+                                        evidence-led final decision
+                                                     │
+                                              Result JSON ──> Flutter
+
+Flutter App ──> Local SQLite (verification history)
 
 Optional:
 SQLite <-> Sync Layer <-> Supabase
@@ -52,11 +45,17 @@ Local verification history. Local storage is the default.
 ### FastAPI
 HTTP/API boundary and orchestration of verification services.
 
-### DistilBERT
-ML classification/inference. It is one component of the verification pipeline, not the whole product.
+### TF-IDF + Logistic Regression
+The official MVP baseline classifier is the existing scikit-learn pipeline identified as `fever-tfidf-logreg/v1`. It uses a `TfidfVectorizer` and `LogisticRegression`, trained on FEVER claim text with the labels mapped to `REAL`, `FAKE`, and `UNCERTAIN`.
+
+TF-IDF was chosen for the MVP because it supports lightweight local inference, keeps deployment simple with the existing scikit-learn dependency, and is already integrated behind the backend's `MLClassifier` interface. The mock classifier remains available for development and tests; `ML_PROVIDER=tfidf` selects the trained model.
+
+This is a baseline text classifier. Its learned prediction is not proof that a claim is factually true or false: it does not retrieve facts or inspect supporting evidence. The evidence providers supply fact-check context, and the verification engine combines that evidence with the internal ML signal. Insufficient or conflicting evidence can produce `UNCERTAIN`; the classifier must not force a decisive public verdict when the evidence does not support one.
+
+Future classifier upgrades can be evaluated separately behind `MLClassifier`. They must preserve the existing API contract unless an API change is explicitly approved and documented.
 
 ### Evidence / fact-check layer
-Provides supporting/conflicting evidence and sources.
+Retrieves reviewed claims and supporting or conflicting evidence and sources. Evidence is the basis for the public explanation and a primary input to the final verdict. If evidence is insufficient or conflicting, the verifier can return `UNCERTAIN`. If all configured evidence providers are unavailable, the existing service-unavailable error behavior remains in effect.
 
 ### Supabase
 Optional cloud layer for account/sync functionality. Cloud sync is OFF by default.
@@ -89,19 +88,12 @@ If this contract changes, document the change before changing both sides.
 
 ## 5. MVP strategy
 
-Do not block Flutter on the final ML model.
-
 ```text
-Flutter → FastAPI → Mock result → Flutter result screen
+Flutter → FastAPI /verify → TF-IDF + Logistic Regression and evidence
+        → evidence-led verification decision → existing result response
 ```
 
-Then replace the mock service with:
-
-```text
-FastAPI → DistilBERT + Evidence → Final result
-```
-
-This allows parallel work.
+TF-IDF + Logistic Regression is the approved MVP classifier. The mock provider remains available for deterministic development and tests; it is not a silent fallback when TF-IDF is selected and unavailable.
 
 ## 6. Team ownership
 
@@ -119,11 +111,10 @@ This allows parallel work.
 - API documentation
 
 **ML**
-- DistilBERT
-- preprocessing
-- inference
-- model evaluation
-- backend-facing model interface
+- FEVER data and label mapping
+- TF-IDF + Logistic Regression training and evaluation
+- inference through the shared `MLClassifier` interface
+- future model comparisons behind that interface, without an API change unless separately approved
 
 **Database**
 - SQLite schema
@@ -233,9 +224,9 @@ Every teammate should:
 
 The immediate MVP target is:
 
-**Flutter → FastAPI → verification result → Flutter result → SQLite history**
+**Flutter → FastAPI → TF-IDF + evidence → evidence-led verification result → Flutter result → SQLite history**
 
-Mock verification responses are acceptable while ML/evidence work continues in parallel.
+Use the fixture evidence provider for deterministic development and tests. The mock ML provider remains an explicit development/test option.
 
 ## 14. Product principles
 

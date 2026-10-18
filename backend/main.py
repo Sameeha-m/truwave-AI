@@ -5,7 +5,7 @@ from collections.abc import Sequence
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from backend.config import ConfigError, Settings, load_settings
 from backend.verifier import Decision, VerificationUnavailable, Verifier
@@ -15,10 +15,19 @@ from evidence.google_factcheck import GoogleFactCheckProvider
 from evidence.service import EvidenceService
 from ml.base import MLClassifier
 from ml.mock import MockClassifier
+from ml.tfidf import TfidfClassifier
 
 
 class VerifyRequest(BaseModel):
-    claim: str = Field(min_length=1)
+    claim: str = Field(min_length=1, max_length=5000)
+
+    @field_validator("claim")
+    @classmethod
+    def claim_must_contain_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("claim must not be blank")
+        return value
 
 
 class Source(BaseModel):
@@ -43,9 +52,15 @@ def build_verifier(
 ) -> Verifier:
     """Build the configured pipeline; classifier injection keeps the ML seam replaceable."""
     if ml_classifier is None:
-        if settings.ml_provider != "mock":
+        if settings.ml_provider == "mock":
+            ml_classifier = MockClassifier()
+        elif settings.ml_provider == "tfidf":
+            try:
+                ml_classifier = TfidfClassifier(settings.ml_model_path)
+            except Exception as exc:
+                raise ConfigError("Configured TF-IDF ML model is unavailable or invalid") from exc
+        else:
             raise ConfigError("Configured ML classifier is not available")
-        ml_classifier = MockClassifier()
 
     if evidence_providers is None:
         if settings.evidence_provider == "google":

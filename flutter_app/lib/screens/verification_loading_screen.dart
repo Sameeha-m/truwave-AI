@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../database/source_model.dart';
@@ -8,8 +9,16 @@ import 'verification_result_screen.dart';
 
 class VerificationLoadingScreen extends StatefulWidget {
   final String claim;
+  final VerificationService? verificationService;
+  final Future<void> Function(Verification, List<VerificationSource>)?
+  saveVerification;
 
-  const VerificationLoadingScreen({super.key, required this.claim});
+  const VerificationLoadingScreen({
+    super.key,
+    required this.claim,
+    this.verificationService,
+    this.saveVerification,
+  });
 
   @override
   State<VerificationLoadingScreen> createState() =>
@@ -18,20 +27,31 @@ class VerificationLoadingScreen extends StatefulWidget {
 
 class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
     with SingleTickerProviderStateMixin {
-  final List<VerificationStep> steps = const [
-    VerificationStep(
-      label: 'Find reliable sources',
-      status: VerificationStatus.done,
-    ),
-    VerificationStep(
-      label: 'Compare evidence',
-      status: VerificationStatus.active,
-    ),
-    VerificationStep(
-      label: 'Preparing explanation',
-      status: VerificationStatus.pending,
-    ),
+  static const List<String> _stepLabels = [
+    'Finding reliable sources',
+    'Comparing evidence',
+    'Preparing explanation',
+    'Finalizing result',
   ];
+  static const Duration _stepDuration = Duration(milliseconds: 700);
+  static const Duration _finalStageTransition = Duration(milliseconds: 180);
+
+  int _activeStepIndex = 0;
+  Timer? _stepTimer;
+
+  List<VerificationStep> get steps =>
+      List.generate(_stepLabels.length, (index) {
+        final status = index < _activeStepIndex
+            ? VerificationStatus.done
+            : index == _activeStepIndex
+            ? VerificationStatus.active
+            : VerificationStatus.pending;
+        return VerificationStep(
+          index: index,
+          label: _stepLabels[index],
+          status: status,
+        );
+      });
 
   late final AnimationController _loadingController = AnimationController(
     vsync: this,
@@ -41,12 +61,31 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
   @override
   void initState() {
     super.initState();
+    _stepTimer = Timer.periodic(_stepDuration, (_) {
+      if (!mounted) return;
+      if (_activeStepIndex < _stepLabels.length - 1) {
+        setState(() => _activeStepIndex++);
+      } else {
+        // Stay on the final active step until the real request completes.
+        _stepTimer?.cancel();
+      }
+    });
     _verifyClaim();
   }
 
   Future<void> _verifyClaim() async {
     try {
-      final response = await VerificationService().verifyClaim(widget.claim);
+      final response =
+          await (widget.verificationService ?? VerificationService())
+              .verifyClaim(widget.claim);
+      _stepTimer?.cancel();
+      if (!mounted) return;
+      if (_activeStepIndex < _stepLabels.length - 1) {
+        setState(() => _activeStepIndex = _stepLabels.length - 1);
+        await Future<void>.delayed(_finalStageTransition);
+      }
+      if (!mounted) return;
+
       final verification = Verification.fromApiResponse(widget.claim, response);
       final sources = (response['sources'] as List<dynamic>)
           .map(
@@ -55,7 +94,23 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
           )
           .toList();
 
-      await DatabaseHelper.instance.insertVerification(verification, sources);
+      final saveVerification = widget.saveVerification;
+      try {
+        if (saveVerification == null) {
+          await DatabaseHelper.instance.insertVerification(verification, sources);
+        } else {
+          await saveVerification(verification, sources);
+        }
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Verification completed, but this result could not be saved.',
+            ),
+          ),
+        );
+      }
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -68,6 +123,7 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
         ),
       );
     } catch (e) {
+      _stepTimer?.cancel();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -82,6 +138,7 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
 
   @override
   void dispose() {
+    _stepTimer?.cancel();
     _loadingController.dispose();
     super.dispose();
   }
@@ -287,14 +344,15 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
 
                     return Column(
                       children: [
-                        _VerificationStepRow(step: step),
-                        if (index == 0)
+                        _VerificationStepRow(
+                          step: step,
+                          pulse: _loadingController,
+                        ),
+                        if (index < steps.length - 1)
                           const Padding(
-                            padding: EdgeInsets.only(top: 12, bottom: 18),
+                            padding: EdgeInsets.only(top: 12, bottom: 12),
                             child: Divider(color: Color(0xFFE6E9F1), height: 1),
-                          )
-                        else if (index < steps.length - 1)
-                          const SizedBox(height: 28),
+                          ),
                       ],
                     );
                   }),
@@ -324,7 +382,7 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Your claim stays private while we verify.',
+                              'Your claim is sent to our verification service to find evidence.',
                               style: TextStyle(
                                 fontSize: 16,
                                 height: 1.2,
@@ -361,16 +419,22 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
 enum VerificationStatus { done, active, pending }
 
 class VerificationStep {
+  final int index;
   final String label;
   final VerificationStatus status;
 
-  const VerificationStep({required this.label, required this.status});
+  const VerificationStep({
+    required this.index,
+    required this.label,
+    required this.status,
+  });
 }
 
 class _VerificationStepRow extends StatelessWidget {
   final VerificationStep step;
+  final Animation<double> pulse;
 
-  const _VerificationStepRow({required this.step});
+  const _VerificationStepRow({required this.step, required this.pulse});
 
   @override
   Widget build(BuildContext context) {
@@ -378,22 +442,51 @@ class _VerificationStepRow extends StatelessWidget {
 
     switch (step.status) {
       case VerificationStatus.done:
-        indicator = const Icon(Icons.check, size: 20, color: Color(0xFF22C55E));
+        indicator = Container(
+          key: ValueKey('step-${step.index}-done'),
+          width: 24,
+          height: 24,
+          decoration: const BoxDecoration(
+            color: Color(0xFF22C55E),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_rounded, size: 17, color: Colors.white),
+        );
         break;
 
       case VerificationStatus.active:
-        indicator = Container(
-          width: 20,
-          height: 20,
-          decoration: const BoxDecoration(
-            color: Color(0xFF6847EE),
-            shape: BoxShape.circle,
+        indicator = AnimatedBuilder(
+          key: ValueKey('step-${step.index}-active'),
+          animation: pulse,
+          builder: (context, child) {
+            final scale = 0.88 + 0.12 * math.sin(pulse.value * math.pi * 2);
+            return Transform.scale(scale: scale, child: child);
+          },
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6847EE).withOpacity(0.14),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF6847EE), width: 2),
+            ),
+            child: Center(
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF6847EE),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
           ),
         );
         break;
 
       case VerificationStatus.pending:
         indicator = Container(
+          key: ValueKey('step-${step.index}-pending'),
           width: 20,
           height: 20,
           decoration: const BoxDecoration(
@@ -408,16 +501,28 @@ class _VerificationStepRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: Text(
-            step.label,
-            style: const TextStyle(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 250),
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF171922),
+              color: step.status == VerificationStatus.active
+                  ? const Color(0xFF6847EE)
+                  : const Color(0xFF171922),
             ),
+            child: Text(step.label),
           ),
         ),
-        indicator,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(scale: animation, child: child),
+          ),
+          child: indicator,
+        ),
       ],
     );
   }

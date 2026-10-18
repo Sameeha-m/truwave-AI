@@ -208,13 +208,11 @@ def decide(
     ml_dir = ml_stance(ml, ml_threshold)
     word = _word(direction)
     who = "Multiple independent fact-checkers" if a.multi else "A fact-checker we recognise"
-    real_ml = ml is not None and not ml.is_mock   # never credit "automated analysis" to a mock
-
     if ml_dir == direction:
         rule = "R1_AGREE_MULTI" if a.multi else "R2_AGREE_SINGLE"
         findings = list(all_findings)
-        if real_ml:
-            findings.append("Automated text analysis, which is not a fact-check, leaned the same way.")
+        if ml is not None and not ml.is_mock:
+            findings.append("Automated text analysis also supports this rating.")
         return build(direction, rule, f"{who} rated this claim {word}.", findings, a.decisive, a.others)
 
     if ml_dir is None:

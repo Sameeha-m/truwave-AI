@@ -1,4 +1,4 @@
-"""ML layer contract. Implementations (MockClassifier, DistilBERTClassifier) come in Phase 3.
+"""ML layer contract. Implementations include MockClassifier and TfidfClassifier.
 
 An MLResult is an internal PREDICTION. It is not TruWave's verdict: the verification
 engine decides whether, and how much, a prediction may contribute to the final result.
@@ -20,7 +20,7 @@ class MLLabel(str, Enum):
 class MLResult:
     label: MLLabel
     confidence: float          # classifier's own score for `label`, 0..1. Internal; uncalibrated.
-    model_id: str              # e.g. "mock/v1" or "distilbert-liar/2026-xx"
+    model_id: str              # e.g. "mock/v1" or "fever-tfidf-logreg/v1"
     is_mock: bool = False
     scores: dict[MLLabel, float] | None = None   # per-label scores, internal only
     latency_ms: int = 0

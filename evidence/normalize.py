@@ -125,6 +125,41 @@ def negators_in(text: str) -> tuple[str, ...]:
     return tuple(sorted({w for w in _words(text) if w in _NEGATORS}))
 
 
+_RELATIONS = {w: "orbit" for w in (
+    "orbit", "orbits", "orbited", "orbiting",
+    "revolve", "revolves", "revolved", "revolving",
+)}
+_RELATION_FILLER = frozenset({"around", "round"})
+
+
+def _relation_sides(text: str):
+    """Return the first relation and its left/right content tokens, if present."""
+    words = _words(text)
+    hits = [i for i, w in enumerate(words) if w in _RELATIONS]
+    if not hits:
+        return None
+
+    def side(ws):
+        return {_stem(w) for w in ws
+                if w not in _STOPWORDS and w not in _NEGATORS and w not in _RELATION_FILLER}
+
+    i = hits[0]
+    return _RELATIONS[words[i]], side(words[:i]), side(words[i + 1:]), len(hits)
+
+
+def _relation_ok(claim: str, reviewed_claim: str) -> bool:
+    """Extra DIRECT condition. No recognized relation in the claim leaves behavior unchanged."""
+    c = _relation_sides(claim)
+    if c is None:
+        return True
+    r = _relation_sides(reviewed_claim)
+    if r is None or r[0] != c[0] or c[3] > 1 or r[3] > 1:
+        return False  # missing relation, different relation, or sides can't be verified
+    left_ok = not c[1] or not r[1] or bool(c[1] & r[1])
+    right_ok = not c[2] or not r[2] or bool(c[2] & r[2])
+    return left_ok and right_ok
+
+
 @dataclass(frozen=True)
 class RelevanceBreakdown:
     """Everything behind one relevance score. Used by diagnostics; `relevance()` returns `.score`."""
@@ -169,7 +204,8 @@ def relevance_tier(claim: str, reviewed_claim: str) -> tuple[RelevanceTier, floa
     DIRECT requires strong normalized overlap. RELATED requires at least two
     shared domain topic concepts, preventing a lone broad word (e.g. COVID) from
     retaining an otherwise unrelated review. The existing negation guard applies
-    to both tiers.
+    to both tiers. If the claim contains a recognized relation (e.g. orbit/revolve),
+    the reviewed claim must contain the same relation with the same subject and object sides.
     """
     breakdown = explain_relevance(claim, reviewed_claim)
     if breakdown.blocked_by_negation:
@@ -184,7 +220,9 @@ def relevance_tier(claim: str, reviewed_claim: str) -> tuple[RelevanceTier, floa
     literal_required = min(2, len(a_raw))
     same_action = bool((a_raw & b_raw) & _SENSITIVE_ACTIONS)
     sensitive_claim = bool(a_raw & _SENSITIVE_ACTIONS)
-    if score >= 0.50 and len(a_raw & b_raw) >= literal_required and (same_action or not sensitive_claim):
+    if (score >= 0.50 and len(a_raw & b_raw) >= literal_required
+            and (same_action or not sensitive_claim)
+            and _relation_ok(claim, reviewed_claim)):
         return RelevanceTier.DIRECT, score
     shared_topics = (a & b) & _TOPIC_WORDS
     if len(shared_topics) >= 2:

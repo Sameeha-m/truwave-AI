@@ -50,6 +50,53 @@ def test_relevance_tiers_aliases_and_negation_safety():
     assert relevance_tier("Drinking bleach cures COVID-19", "Penguins cross the Atlantic")[0] == RelevanceTier.UNRELATED
 
 
+def test_relevance_tier_does_not_match_shared_entities_with_a_different_proposition():
+    tier, _ = relevance_tier(
+        "the earth revolves around the sun",
+        "The Sun appears smaller than Earth.",
+    )
+    assert tier != RelevanceTier.DIRECT
+
+
+def test_relevance_tier_matches_earth_orbits_sun_paraphrase():
+    assert relevance_tier(
+        "the earth revolves around the sun",
+        "The Earth orbits the Sun.",
+    )[0] == RelevanceTier.DIRECT
+
+
+def test_relevance_tier_rejects_reversed_orbit_relation():
+    assert relevance_tier("the earth revolves around the sun",
+                          "The Sun revolves around the Earth.")[0] != RelevanceTier.DIRECT
+    assert relevance_tier("the sun orbits the earth",
+                          "The Earth orbits the Sun.")[0] != RelevanceTier.DIRECT
+
+
+def test_relevance_tier_relation_gate_keeps_negation_safety():
+    # one side negated -> still UNRELATED (guard runs before the gate)
+    assert relevance_tier("the earth revolves around the sun",
+                          "The Earth does not orbit the Sun.")[0] == RelevanceTier.UNRELATED
+    # both negated, same relation and sides -> still DIRECT
+    assert relevance_tier("the earth does not revolve around the sun",
+                          "The Earth doesn't orbit the Sun.")[0] == RelevanceTier.DIRECT
+
+
+def test_relevance_tier_relation_matches_whole_words_only():
+    # "orbital" is NOT a relation form; a substring match on "orbit" would wrongly let this through
+    assert relevance_tier("the earth revolves around the sun",
+                          "Earth's orbital motion around the Sun")[0] != RelevanceTier.DIRECT
+
+
+def test_relevance_tier_rejects_texts_with_multiple_relations():
+    # conservative choice: sides can't be verified when a text has more than one relation word
+    assert relevance_tier("the earth revolves around the sun",
+                          "The Moon orbits the Earth, which revolves around the Sun.")[0] != RelevanceTier.DIRECT
+
+
+def test_relevance_tier_allows_claim_with_missing_subject_side():
+    assert relevance_tier("orbits the sun", "The Earth orbits the Sun.")[0] == RelevanceTier.DIRECT
+
+
 def test_relevance_empty_inputs():
     assert relevance("", "anything") == 0.0
     assert relevance("the and of", "the and of") == 0.0  # only stopwords

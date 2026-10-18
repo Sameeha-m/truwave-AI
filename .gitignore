@@ -9,6 +9,7 @@ __pycache__/
 .pytest_cache/
 backend/__pycache__/
 *.pyc
+ml/data/fever/
 
 # Flutter/Dart
 flutter_app/.dart_tool/

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../database/source_model.dart';
 import '../database/verification_model.dart';
+import 'full_explanation_screen.dart';
 
 class VerificationResultScreen extends StatelessWidget {
   final Verification verification;
@@ -87,7 +88,7 @@ class VerificationResultScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text('Confidence Score'),
+                    const Text('Confidence in this classification'),
                     const SizedBox(height: 2),
                     Text(
                       '${(confidence * 100).round()}%',
@@ -161,7 +162,14 @@ class VerificationResultScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => FullExplanationScreen(
+                        verification: verification,
+                        sources: sources,
+                      ),
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: resultColor,
                     foregroundColor: Colors.white,
