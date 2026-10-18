@@ -9,7 +9,7 @@ def settings(**env):
 
 def test_defaults():
     s = settings()
-    assert (s.env, s.ml_provider, s.evidence_provider) == ("development", "mock", "google")
+    assert (s.env, s.ml_provider, s.evidence_provider) == ("development", "tfidf", "google")
     assert not s.factcheck_key_configured
     assert s.ml_strong_threshold == 0.80 and s.max_sources == 5
 
@@ -38,7 +38,7 @@ def test_invalid_values_are_rejected_with_a_clear_message(env):
 
 
 def test_blank_values_fall_back_to_defaults():
-    assert settings(ML_PROVIDER="", FACTCHECK_TIMEOUT_S="").ml_provider == "mock"
+    assert settings(ML_PROVIDER="", FACTCHECK_TIMEOUT_S="").ml_provider == "tfidf"
 
 
 def test_config_error_never_contains_the_key():

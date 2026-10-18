@@ -6,7 +6,6 @@ from types import SimpleNamespace
 import httpx
 import joblib
 import pytest
-from fastapi.testclient import TestClient
 
 from backend.config import ConfigError, load_settings
 from backend.main import build_verifier, create_app
@@ -16,12 +15,30 @@ from ml.base import MLLabel, MLResult, MLUnavailableError
 from ml.tfidf import TfidfClassifier
 
 
+class _LifespanClient:
+    """Keep focused API tests exercising FastAPI startup and shutdown hooks."""
+
+    def __init__(self, app):
+        self.app = app
+
+    def post(self, *args, **kwargs):
+        async def request():
+            async with self.app.router.lifespan_context(self.app):
+                async with httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=self.app),
+                    base_url="http://test",
+                ) as client:
+                    return await client.post(*args, **kwargs)
+
+        return asyncio.run(request())
+
+
 def _settings(**env):
-    return load_settings(env, load_env_file=False)
+    return load_settings({"ML_PROVIDER": "mock", **env}, load_env_file=False)
 
 
 def test_verify_uses_mock_classifier_and_fixture_evidence_with_public_contract():
-    client = TestClient(create_app(
+    client = _LifespanClient(create_app(
         settings=_settings(EVIDENCE_PROVIDER="fixture")
     ))
 
@@ -39,7 +56,7 @@ def test_verify_uses_mock_classifier_and_fixture_evidence_with_public_contract()
 
 
 def test_verify_returns_uncertain_when_no_direct_evidence_is_found():
-    client = TestClient(create_app(
+    client = _LifespanClient(create_app(
         settings=_settings(EVIDENCE_PROVIDER="fixture")
     ))
 
@@ -51,7 +68,7 @@ def test_verify_returns_uncertain_when_no_direct_evidence_is_found():
 
 
 def test_verify_returns_real_from_supporting_fixture_evidence():
-    client = TestClient(create_app(settings=_settings(EVIDENCE_PROVIDER="fixture")))
+    client = _LifespanClient(create_app(settings=_settings(EVIDENCE_PROVIDER="fixture")))
 
     response = client.post("/verify", json={"claim": "The Earth revolves around the Sun"})
 
@@ -82,7 +99,7 @@ def test_google_provider_results_map_through_verify_contract():
 
     upstream = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     provider = GoogleFactCheckProvider("test-key", client=upstream, backoff_s=0)
-    client = TestClient(create_app(
+    client = _LifespanClient(create_app(
         settings=_settings(), evidence_providers=[provider]
     ))
 
@@ -102,14 +119,14 @@ def test_google_provider_results_map_through_verify_contract():
 
 
 def test_verify_rejects_blank_and_oversized_claims_with_422():
-    client = TestClient(create_app(settings=_settings(EVIDENCE_PROVIDER="fixture")))
+    client = _LifespanClient(create_app(settings=_settings(EVIDENCE_PROVIDER="fixture")))
 
     assert client.post("/verify", json={"claim": "   "}).status_code == 422
     assert client.post("/verify", json={"claim": "x" * 5001}).status_code == 422
 
 
 def test_missing_google_configuration_returns_sanitized_503():
-    client = TestClient(create_app(settings=_settings()))
+    client = _LifespanClient(create_app(settings=_settings()))
 
     response = client.post("/verify", json={"claim": "A claim to verify"})
 
@@ -122,7 +139,7 @@ def test_missing_google_configuration_returns_sanitized_503():
 
 
 def test_conflicting_fact_checks_remain_uncertain():
-    client = TestClient(create_app(settings=_settings(EVIDENCE_PROVIDER="fixture")))
+    client = _LifespanClient(create_app(settings=_settings(EVIDENCE_PROVIDER="fixture")))
 
     response = client.post("/verify", json={"claim": "Coffee prevents all forms of cancer"})
 
@@ -166,16 +183,16 @@ def test_real_tfidf_artifact_is_configured_for_verify_with_fixture_evidence():
     settings = _settings(ML_PROVIDER="tfidf", EVIDENCE_PROVIDER="fixture")
     application = create_app(settings=settings)
 
-    assert isinstance(application.state.verifier._ml, TfidfClassifier)
-
     async def post_claim():
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=application),
-            base_url="http://test",
-        ) as client:
-            return await client.post(
-                "/verify", json={"claim": "A claim without fixture evidence"}
-            )
+        async with application.router.lifespan_context(application):
+            assert isinstance(application.state.verifier._ml, TfidfClassifier)
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=application),
+                base_url="http://test",
+            ) as client:
+                return await client.post(
+                    "/verify", json={"claim": "A claim without fixture evidence"}
+                )
 
     response = asyncio.run(post_claim())
 
@@ -202,19 +219,20 @@ def test_configured_tfidf_is_selected_and_invoked_by_verify(monkeypatch):
     ))
 
     async def post_claim():
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=application),
-            base_url="http://test",
-        ) as client:
-            return await client.post(
-                "/verify", json={"claim": "A model execution check"}
-            )
+        async with application.router.lifespan_context(application):
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=application),
+                base_url="http://test",
+            ) as client:
+                return await client.post(
+                    "/verify", json={"claim": "A model execution check"}
+                )
 
     response = asyncio.run(post_claim())
 
     assert response.status_code == 200
     assert response.json()["verdict"] == "UNCERTAIN"
-    assert calls == ["A model execution check"]
+    assert calls == ["TruWave startup warmup", "A model execution check"]
 
 
 def test_unavailable_tfidf_artifact_fails_explicitly_without_mock_fallback(tmp_path):
@@ -225,6 +243,21 @@ def test_unavailable_tfidf_artifact_fails_explicitly_without_mock_fallback(tmp_p
 
     with pytest.raises(ConfigError, match="TF-IDF ML model is unavailable"):
         build_verifier(settings)
+
+
+def test_unavailable_tfidf_artifact_fails_during_app_startup(tmp_path):
+    settings = replace(
+        _settings(ML_PROVIDER="tfidf", EVIDENCE_PROVIDER="fixture"),
+        ml_model_path=tmp_path / "missing-model.joblib",
+    )
+    application = create_app(settings=settings)
+
+    async def start():
+        async with application.router.lifespan_context(application):
+            pass
+
+    with pytest.raises(ConfigError, match="TF-IDF ML model is unavailable"):
+        asyncio.run(start())
 
 
 class RelatedFalseProvider:
@@ -245,7 +278,7 @@ class RelatedFalseProvider:
 
 
 def test_related_evidence_is_returned_as_context_but_cannot_establish_verdict():
-    client = TestClient(create_app(
+    client = _LifespanClient(create_app(
         settings=_settings(), evidence_providers=[RelatedFalseProvider()]
     ))
 
@@ -266,7 +299,7 @@ class FailingEvidenceProvider:
 
 
 def test_google_style_evidence_failure_is_sanitized_503():
-    client = TestClient(create_app(
+    client = _LifespanClient(create_app(
         settings=_settings(), evidence_providers=[FailingEvidenceProvider()]
     ))
 

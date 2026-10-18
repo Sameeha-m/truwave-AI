@@ -23,7 +23,7 @@ class ConfigError(ValueError):
 @dataclass(frozen=True)
 class Settings:
     env: str = "development"
-    ml_provider: str = "mock"
+    ml_provider: str = "tfidf"
     evidence_provider: str = "google"
     # repr=False: the key must never show up in logs, tracebacks or debug prints.
     factcheck_api_key: str = field(default="", repr=False)
@@ -100,7 +100,7 @@ def load_settings(
     env_name = _read_choice(environ, "TRUWAVE_ENV", "development", ("development", "production"))
     return Settings(
         env=env_name,
-        ml_provider=_read_choice(environ, "ML_PROVIDER", "mock", ML_PROVIDERS),
+        ml_provider=_read_choice(environ, "ML_PROVIDER", "tfidf", ML_PROVIDERS),
         evidence_provider=_read_choice(environ, "EVIDENCE_PROVIDER", "google", EVIDENCE_PROVIDERS),
         factcheck_api_key=(environ.get("FACTCHECK_API_KEY") or "").strip(),
         factcheck_language=(environ.get("FACTCHECK_LANGUAGE", "en") or "").strip(),

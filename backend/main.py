@@ -1,6 +1,8 @@
 """FastAPI boundary for TruWave verification."""
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager
 from collections.abc import Sequence
 
 from fastapi import FastAPI, HTTPException, Request
@@ -108,13 +110,30 @@ def create_app(
     evidence_providers: Sequence[EvidenceProvider] | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
-    if verifier is None:
-        verifier = build_verifier(
-            settings, ml_classifier=ml_classifier, evidence_providers=evidence_providers
-        )
 
-    application = FastAPI()
-    application.state.verifier = verifier
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        active_verifier = verifier
+        if active_verifier is None:
+            active_verifier = await asyncio.to_thread(
+                build_verifier,
+                settings,
+                ml_classifier=ml_classifier,
+                evidence_providers=evidence_providers,
+            )
+
+        classifier = ml_classifier
+        if classifier is None and active_verifier is not None:
+            classifier = getattr(active_verifier, "_ml", None)
+        if classifier is not None:
+            # sklearn's first transform may initialize native thread pools. Do this
+            # before serving requests so it cannot consume the request ML timeout.
+            await asyncio.to_thread(classifier.classify, "TruWave startup warmup")
+
+        application.state.verifier = active_verifier
+        yield
+
+    application = FastAPI(lifespan=lifespan)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
