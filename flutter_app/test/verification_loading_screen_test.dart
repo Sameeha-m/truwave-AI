@@ -167,7 +167,9 @@ void main() {
       _appWithStartButton(VerificationService(client: client)),
     );
     await tester.tap(find.text('Start verification'));
-      await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.text('Verification Result'), findsOneWidget);
     expect(find.text('REAL'), findsOneWidget);
@@ -211,6 +213,8 @@ void main() {
       _appWithStartButton(VerificationService(client: client)),
     );
     await tester.tap(find.text('Start verification'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.text('Verification Result'), findsOneWidget);

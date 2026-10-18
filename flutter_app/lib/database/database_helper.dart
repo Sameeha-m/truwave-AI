@@ -112,7 +112,10 @@ class DatabaseHelper {
 
   Future<List<Verification>> getVerifications() async {
     final db = await database;
-    final result = await db.query('verifications', orderBy: 'created_at DESC');
+    final result = await db.query(
+      'verifications',
+      orderBy: 'created_at DESC, id DESC',
+    );
 
     return result.map(_verificationFromMap).toList();
   }

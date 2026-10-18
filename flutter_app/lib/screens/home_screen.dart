@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'verify_news_screen.dart';
+import 'image_scan_screen.dart';
 import 'history_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -27,11 +28,6 @@ class HomeScreen extends StatelessWidget {
                       color: Color(0xFF6133F5),
                     ),
                   ),
-                  const Icon(
-                    Icons.settings_outlined,
-                    size: 25,
-                    color: Color(0xFF7C8295),
-                  ),
                 ],
               ),
             ),
@@ -57,10 +53,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         SizedBox(width: 8),
-                        Text(
-                          '👋',
-                          style: TextStyle(fontSize: 22),
-                        ),
+                        Text('👋', style: TextStyle(fontSize: 22)),
                       ],
                     ),
 
@@ -82,10 +75,7 @@ class HomeScreen extends StatelessWidget {
                     // SUBTITLE
                     const Text(
                       'Fast, private and reliable results.',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Color(0xFF7C8295),
-                      ),
+                      style: TextStyle(fontSize: 18, color: Color(0xFF7C8295)),
                     ),
 
                     const SizedBox(height: 20),
@@ -93,8 +83,7 @@ class HomeScreen extends StatelessWidget {
                     // VERIFY NEWS
                     _VerifyCard(
                       title: 'Verify News',
-                      description:
-                          'Paste text or link to verify any news claim',
+                      description: 'Paste text to verify a news claim',
                       backgroundColor: const Color(0xFF6133F5),
                       icon: const _NewsIcon(),
                       onTap: () {
@@ -105,7 +94,6 @@ class HomeScreen extends StatelessWidget {
                           ),
                         );
                       },
-  
                     ),
 
                     const SizedBox(height: 16),
@@ -113,11 +101,15 @@ class HomeScreen extends StatelessWidget {
                     // VERIFY IMAGE
                     _VerifyCard(
                       title: 'Verify Image',
-                      description:
-                          'Check if an image is AI-generated or not',
+                      description: 'Check if an image is AI-generated or not',
                       backgroundColor: const Color(0xFF077546),
                       icon: const _ImageIcon(),
-                      onTap: () {},
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ImageScanScreen(),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 32),
@@ -135,7 +127,12 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HistoryScreen(),
+                            ),
+                          ),
                           child: const Text(
                             'View all',
                             style: TextStyle(
@@ -213,10 +210,7 @@ class _VerifyCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ],
               ),
@@ -241,10 +235,7 @@ class _RecentCheckCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -316,11 +307,7 @@ class _BottomNavigation extends StatelessWidget {
       height: 86,
       decoration: const BoxDecoration(
         color: Color(0xFFF8F9FB),
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFEBECF0),
-          ),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFEBECF0))),
       ),
       child: SafeArea(
         top: false,
@@ -331,10 +318,7 @@ class _BottomNavigation extends StatelessWidget {
               label: 'Home',
               active: true,
               onTap: () {
-                Navigator.popUntil(
-                  context,
-                  (route) => route.isFirst,
-                );
+                Navigator.popUntil(context, (route) => route.isFirst);
               },
             ),
 
@@ -342,13 +326,13 @@ class _BottomNavigation extends StatelessWidget {
               icon: Icons.history,
               label: 'History',
               onTap: () {
-               Navigator.push(
-                context,
-                MaterialPageRoute(
-                 builder: (context) => const HistoryScreen(),
-                ),
-               );
-             },
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HistoryScreen(),
+                  ),
+                );
+              },
             ),
 
             // CENTRAL PLUS BUTTON
@@ -358,13 +342,14 @@ class _BottomNavigation extends StatelessWidget {
                 child: Transform.translate(
                   offset: const Offset(0, -20),
                   child: GestureDetector(
-                    onTap: () {Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const VerifyNewsScreen(),
-                      ),
-                    );
-                  },
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const VerifyNewsScreen(),
+                        ),
+                      );
+                    },
                     child: Container(
                       width: 64,
                       height: 64,
@@ -392,18 +377,6 @@ class _BottomNavigation extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-
-            _NavItem(
-              icon: Icons.bar_chart_outlined,
-              label: 'Insights',
-              onTap: () {},
-            ),
-
-            _NavItem(
-              icon: Icons.person_outline,
-              label: 'Profile',
-              onTap: () {},
             ),
           ],
         ),
@@ -441,18 +414,13 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: color,
-            ),
+            Icon(icon, size: 24, color: color),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight:
-                    active ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: active ? FontWeight.w600 : FontWeight.normal,
                 color: color,
               ),
             ),
@@ -472,10 +440,7 @@ class _NewsIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(32, 32),
-      painter: _NewsIconPainter(),
-    );
+    return CustomPaint(size: const Size(32, 32), painter: _NewsIconPainter());
   }
 }
 
@@ -526,10 +491,7 @@ class _ImageIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(32, 32),
-      painter: _ImageIconPainter(),
-    );
+    return CustomPaint(size: const Size(32, 32), painter: _ImageIconPainter());
   }
 }
 
@@ -550,17 +512,9 @@ class _ImageIconPainter extends CustomPainter {
       paint,
     );
 
-    canvas.drawLine(
-      const Offset(7, 25),
-      const Offset(25, 7),
-      paint,
-    );
+    canvas.drawLine(const Offset(7, 25), const Offset(25, 7), paint);
 
-    canvas.drawLine(
-      const Offset(11, 25),
-      const Offset(25, 11),
-      paint,
-    );
+    canvas.drawLine(const Offset(11, 25), const Offset(25, 11), paint);
   }
 
   @override
@@ -588,14 +542,11 @@ class _RecentCheckIcon extends StatelessWidget {
 class _RecentCheckIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint darkPaint = Paint()
-      ..color = const Color(0xFF2E3A74);
+    final Paint darkPaint = Paint()..color = const Color(0xFF2E3A74);
 
-    final Paint redPaint = Paint()
-      ..color = const Color(0xFFF35945);
+    final Paint redPaint = Paint()..color = const Color(0xFFF35945);
 
-    final Paint blackPaint = Paint()
-      ..color = Colors.black;
+    final Paint blackPaint = Paint()..color = Colors.black;
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(

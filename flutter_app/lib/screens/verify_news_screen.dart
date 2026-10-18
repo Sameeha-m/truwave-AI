@@ -11,8 +11,6 @@ class VerifyNewsScreen extends StatefulWidget {
 class _VerifyNewsScreenState extends State<VerifyNewsScreen> {
   final TextEditingController _textController = TextEditingController();
 
-  bool _pasteTextSelected = true;
-
   @override
   void dispose() {
     _textController.dispose();
@@ -65,80 +63,21 @@ class _VerifyNewsScreenState extends State<VerifyNewsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Tab bar
                     Container(
+                      width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _pasteTextSelected = true;
-                                });
-                              },
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                child: Text(
-                                  'Paste Text',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: _pasteTextSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: _pasteTextSelected
-                                        ? const Color(0xFF5D35EB)
-                                        : const Color(0xFF8D96A7),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _pasteTextSelected = false;
-                                });
-                              },
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                child: Text(
-                                  'Enter Link',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: !_pasteTextSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: !_pasteTextSelected
-                                        ? const Color(0xFF5D35EB)
-                                        : const Color(0xFF8D96A7),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Purple tab indicator
-                    Align(
-                      alignment: _pasteTextSelected
-                          ? Alignment.centerLeft
-                          : Alignment.centerRight,
-                      child: Container(
-                        width: MediaQuery.of(context).size.width / 2 - 16,
-                        height: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        color: const Color(0xFF5D35EB),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: const Text(
+                        'Paste Text',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5D35EB),
+                        ),
                       ),
                     ),
 
@@ -165,9 +104,7 @@ class _VerifyNewsScreenState extends State<VerifyNewsScreen> {
                               decoration: InputDecoration(
                                 border: InputBorder.none,
                                 counterText: '',
-                                hintText: _pasteTextSelected
-                                    ? 'Paste your news text here...'
-                                    : 'Enter the news link here...',
+                                hintText: 'Paste your news claim here...',
                                 hintStyle: const TextStyle(
                                   fontSize: 18,
                                   color: Color(0xFF8D96A7),
@@ -203,17 +140,18 @@ class _VerifyNewsScreenState extends State<VerifyNewsScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _textController.text.trim().isEmpty
-                          ? null
-                          : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => VerificationLoadingScreen(
-                                 claim: _textController.text.trim(),
-                                ),
-                              )
-                            );
-                   },
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        VerificationLoadingScreen(
+                                          claim: _textController.text.trim(),
+                                        ),
+                                  ),
+                                );
+                              },
                         icon: const Icon(
                           Icons.auto_awesome,
                           size: 20,
@@ -295,19 +233,12 @@ class _TipRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.check,
-            size: 16,
-            color: Color(0xFF757B8A),
-          ),
+          const Icon(Icons.check, size: 16, color: Color(0xFF757B8A)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Color(0xFF757B8A),
-              ),
+              style: const TextStyle(fontSize: 16, color: Color(0xFF757B8A)),
             ),
           ),
         ],
@@ -325,11 +256,7 @@ class _VerifyNewsBottomNav extends StatelessWidget {
       height: 86,
       decoration: const BoxDecoration(
         color: Color(0xFFF9FAFD),
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFE9EAF0),
-          ),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE9EAF0))),
       ),
       child: SafeArea(
         top: false,
@@ -367,23 +294,13 @@ class _VerifyNewsBottomNav extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.add,
-                      color: Colors.white,
-                      size: 32,
-                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 32),
                   ),
                 ),
               ),
             ),
-            _BottomNavItem(
-              icon: Icons.bolt_outlined,
-              label: 'Insights',
-            ),
-            _BottomNavItem(
-              icon: Icons.person_outline,
-              label: 'Profile',
-            ),
+            _BottomNavItem(icon: Icons.bolt_outlined, label: 'Insights'),
+            _BottomNavItem(icon: Icons.person_outline, label: 'Profile'),
           ],
         ),
       ),
@@ -404,19 +321,13 @@ class _BottomNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active
-        ? const Color(0xFF5D35EB)
-        : const Color(0xFF8D96A7);
+    final color = active ? const Color(0xFF5D35EB) : const Color(0xFF8D96A7);
 
     return Expanded(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 24,
-            color: color,
-          ),
+          Icon(icon, size: 24, color: color),
           const SizedBox(height: 4),
           Text(
             label,

@@ -32,21 +32,6 @@ class TruWaveOnboarding extends StatelessWidget {
                         color: Color(0xFF623EEE),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: TextButton(
-                        onPressed: () {},
-                        child: const Text(
-                          'Skip',
-                          style: TextStyle(
-                            fontSize: 18,
-                            height: 28 / 18,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
 
@@ -145,18 +130,16 @@ class TruWaveOnboarding extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                      builder: (context) => const HomeScreen(),
-                      ),
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HomeScreen(),
+                        ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF623EEE),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -207,25 +190,17 @@ class _FeatureCard extends StatelessWidget {
   final IconData icon;
   final String text;
 
-  const _FeatureCard({
-    required this.icon,
-    required this.text,
-  });
+  const _FeatureCard({required this.icon, required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFE5E7EB),
-        ),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -236,11 +211,7 @@ class _FeatureCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 40,
-            color: const Color(0xFF2563EB),
-          ),
+          Icon(icon, size: 40, color: const Color(0xFF2563EB)),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

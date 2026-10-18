@@ -155,7 +155,10 @@ class VerificationResultScreen extends StatelessWidget {
               ...sources.map(
                 (source) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: Text('${source.name}: ${source.title}'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [Text(source.name), Text(source.title)],
+                  ),
                 ),
               ),
               const SizedBox(height: 28),
