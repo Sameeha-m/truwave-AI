@@ -7,10 +7,12 @@ class VerificationService {
   final http.Client? _client;
   final Duration requestTimeout;
 
-  VerificationService({
+  factory VerificationService({
     http.Client? client,
-    this.requestTimeout = const Duration(seconds: 15),
-  }) : _client = client;
+    Duration requestTimeout = const Duration(seconds: 15),
+  }) => VerificationService._(client, requestTimeout);
+
+  VerificationService._(this._client, this.requestTimeout);
 
   static const String baseUrl = String.fromEnvironment(
     'TRUWAVE_API_BASE_URL',

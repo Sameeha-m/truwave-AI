@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import 'screens/onboarding_screen.dart';
+import 'widgets/shared_history_widgets.dart';
 
 void main() {
   if (kIsWeb) {
@@ -22,6 +23,7 @@ class TruWaveApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'TruWave',
       home: const TruWaveOnboarding(),
+      navigatorObservers: [appRouteObserver],
     );
   }
 }

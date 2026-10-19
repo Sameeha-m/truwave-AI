@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../database/database_helper.dart';
 import '../database/verification_model.dart';
+import '../widgets/shared_history_widgets.dart';
+import 'home_screen.dart';
 import 'verification_result_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -93,6 +95,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
               child: Row(
                 children: [
+                  IconButton(
+                    tooltip: 'Back to Home',
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.pushReplacement<void, void>(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const HomeScreen(),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.arrow_back),
+                  ),
                   const Expanded(
                     child: Text(
                       'History',
@@ -158,24 +176,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     itemCount: verifications.length,
                     itemBuilder: (context, index) {
                       final verification = verifications[index];
-                      return Card(
-                        color: Colors.white,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          title: Text(
-                            verification.claim,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            '${verification.verdict} · ${(verification.confidence * 100).round()}% · ${verification.createdAt.toLocal()}',
-                          ),
-                          onTap: () => _openVerification(verification),
-                          trailing: IconButton(
-                            tooltip: 'Delete verification',
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _deleteVerification(verification),
-                          ),
+                      return VerificationHistoryCard(
+                        verification: verification,
+                        showMetadata: true,
+                        onTap: () => _openVerification(verification),
+                        trailing: IconButton(
+                          tooltip: 'Delete verification',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _deleteVerification(verification),
                         ),
                       );
                     },

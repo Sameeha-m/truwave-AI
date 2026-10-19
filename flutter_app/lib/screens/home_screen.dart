@@ -1,10 +1,55 @@
 import 'package:flutter/material.dart';
-import 'verify_news_screen.dart';
+
+import '../database/database_helper.dart';
+import '../database/verification_model.dart';
+import '../widgets/shared_history_widgets.dart';
 import 'image_scan_screen.dart';
 import 'history_screen.dart';
+import 'verify_news_screen.dart';
+import 'verification_result_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
+  late Future<List<Verification>> _recentChecks;
+  ModalRoute<dynamic>? _route;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentChecks();
+  }
+
+  void _loadRecentChecks() {
+    _recentChecks = DatabaseHelper.instance.getVerifications();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != _route) {
+      if (_route != null) appRouteObserver.unsubscribe(this);
+      _route = route;
+      if (route != null) appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() {
+    setState(_loadRecentChecks);
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,8 +192,37 @@ class HomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    // RECENT CHECK
-                    const _RecentCheckCard(),
+                    FutureBuilder<List<Verification>>(
+                      future: _recentChecks,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const SizedBox.shrink();
+                        }
+                        if (snapshot.hasError) {
+                          return const Text('Could not load recent checks.');
+                        }
+                        final recent = (snapshot.data ?? []).take(3).toList();
+                        if (recent.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Text(
+                              'No checks yet',
+                              style: TextStyle(color: Color(0xFF7C8295)),
+                            ),
+                          );
+                        }
+                        return Column(
+                          children: recent
+                              .map(
+                                (verification) => VerificationHistoryCard(
+                                  verification: verification,
+                                  onTap: () => _openVerification(verification),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -158,11 +232,36 @@ class HomeScreen extends StatelessWidget {
       ),
 
       // BOTTOM NAVIGATION
-      bottomNavigationBar: const _BottomNavigation(),
+      bottomNavigationBar: SharedBottomNavigationBar(
+        onHome: () => Navigator.popUntil(context, (route) => route == _route),
+        onHistory: () => Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => const HistoryScreen()),
+        ),
+        onPlus: () => Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => const VerifyNewsScreen()),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openVerification(Verification verification) async {
+    final id = verification.id;
+    if (id == null) return;
+    final sources = await DatabaseHelper.instance.getSources(id);
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => VerificationResultScreen(
+          verification: verification,
+          sources: sources,
+        ),
+      ),
     );
   }
 }
-
 // ============================================================
 // VERIFY CARD
 // ============================================================
@@ -217,213 +316,6 @@ class _VerifyCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             icon,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// RECENT CHECK CARD
-// ============================================================
-
-class _RecentCheckCard extends StatelessWidget {
-  const _RecentCheckCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const _RecentCheckIcon(),
-
-          const SizedBox(width: 12),
-
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'GOVERNANCE',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Breaking: Govt plans new tax reform in July',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF161C26),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          const Text(
-            'FAKE',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFFF35945),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// BOTTOM NAVIGATION
-// ============================================================
-
-class _BottomNavigation extends StatelessWidget {
-  const _BottomNavigation();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 86,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF8F9FB),
-        border: Border(top: BorderSide(color: Color(0xFFEBECF0))),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            _NavItem(
-              icon: Icons.home_outlined,
-              label: 'Home',
-              active: true,
-              onTap: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-            ),
-
-            _NavItem(
-              icon: Icons.history,
-              label: 'History',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HistoryScreen(),
-                  ),
-                );
-              },
-            ),
-
-            // CENTRAL PLUS BUTTON
-            Expanded(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Transform.translate(
-                  offset: const Offset(0, -20),
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const VerifyNewsScreen(),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6133F5),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFF8F9FB),
-                          width: 4,
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x30000000),
-                            blurRadius: 8,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// NAVIGATION ITEM
-// ============================================================
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final Color color = active
-        ? const Color(0xFF6133F5)
-        : const Color(0xFF7C8295);
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 24, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-                color: color,
-              ),
-            ),
           ],
         ),
       ),
@@ -515,62 +407,6 @@ class _ImageIconPainter extends CustomPainter {
     canvas.drawLine(const Offset(7, 25), const Offset(25, 7), paint);
 
     canvas.drawLine(const Offset(11, 25), const Offset(25, 11), paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return false;
-  }
-}
-
-// ============================================================
-// RECENT CHECK ICON
-// ============================================================
-
-class _RecentCheckIcon extends StatelessWidget {
-  const _RecentCheckIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(32, 32),
-      painter: _RecentCheckIconPainter(),
-    );
-  }
-}
-
-class _RecentCheckIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint darkPaint = Paint()..color = const Color(0xFF2E3A74);
-
-    final Paint redPaint = Paint()..color = const Color(0xFFF35945);
-
-    final Paint blackPaint = Paint()..color = Colors.black;
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(4, 16, 24, 10),
-        const Radius.circular(2),
-      ),
-      darkPaint,
-    );
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(8, 10, 16, 6),
-        const Radius.circular(2),
-      ),
-      redPaint,
-    );
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(12, 6, 8, 4),
-        const Radius.circular(2),
-      ),
-      blackPaint,
-    );
   }
 
   @override

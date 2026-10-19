@@ -174,12 +174,12 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFF6847EE).withOpacity(0.28),
+                      color: const Color(0xFF6847EE).withValues(alpha: 0.28),
                       width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF6847EE).withOpacity(0.12),
+                        color: const Color(0xFF6847EE).withValues(alpha: 0.12),
                         blurRadius: 26,
                         offset: const Offset(0, 8),
                       ),
@@ -195,7 +195,7 @@ class _VerificationLoadingScreenState extends State<VerificationLoadingScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFF22C55E).withOpacity(0.42),
+                      color: const Color(0xFF22C55E).withValues(alpha: 0.42),
                       width: 2,
                     ),
                   ),
@@ -466,7 +466,7 @@ class _VerificationStepRow extends StatelessWidget {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: const Color(0xFF6847EE).withOpacity(0.14),
+              color: const Color(0xFF6847EE).withValues(alpha: 0.14),
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF6847EE), width: 2),
             ),

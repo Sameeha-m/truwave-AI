@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/shared_history_widgets.dart';
+import 'history_screen.dart';
+import 'home_screen.dart';
 import 'verification_loading_screen.dart';
 
 class VerifyNewsScreen extends StatefulWidget {
@@ -213,7 +216,24 @@ class _VerifyNewsScreenState extends State<VerifyNewsScreen> {
             ),
 
             // Bottom navigation
-            _VerifyNewsBottomNav(),
+            SharedBottomNavigationBar(
+              showPlus: false,
+              homeActive: false,
+              onHome: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pushReplacement<void, void>(
+                    context,
+                    MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+                  );
+                }
+              },
+              onHistory: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(builder: (_) => const HistoryScreen()),
+              ),
+            ),
           ],
         ),
       ),
@@ -239,102 +259,6 @@ class _TipRow extends StatelessWidget {
             child: Text(
               text,
               style: const TextStyle(fontSize: 16, color: Color(0xFF757B8A)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VerifyNewsBottomNav extends StatelessWidget {
-  const _VerifyNewsBottomNav();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 86,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF9FAFD),
-        border: Border(top: BorderSide(color: Color(0xFFE9EAF0))),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            _BottomNavItem(
-              icon: Icons.fact_check_outlined,
-              label: 'Home',
-              active: true,
-            ),
-            _BottomNavItem(
-              icon: Icons.calendar_month_outlined,
-              label: 'History',
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Transform.translate(
-                  offset: const Offset(0, -20),
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF5D35EB),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFF9FAFD),
-                        width: 4,
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x30000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 32),
-                  ),
-                ),
-              ),
-            ),
-            _BottomNavItem(icon: Icons.bolt_outlined, label: 'Insights'),
-            _BottomNavItem(icon: Icons.person_outline, label: 'Profile'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-
-  const _BottomNavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF5D35EB) : const Color(0xFF8D96A7);
-
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 24, color: color),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: color,
             ),
           ),
         ],

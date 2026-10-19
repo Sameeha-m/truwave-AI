@@ -28,7 +28,7 @@ Widget _loadingApp(VerificationService service) => MaterialApp(
   home: VerificationLoadingScreen(
     claim: _claim,
     verificationService: service,
-    saveVerification: (_, __) async {},
+    saveVerification: (_, _) async {},
   ),
 );
 
@@ -42,7 +42,7 @@ Widget _appWithStartButton(VerificationService service) => MaterialApp(
               builder: (_) => VerificationLoadingScreen(
                 claim: _claim,
                 verificationService: service,
-                saveVerification: (_, __) async {},
+                saveVerification: (_, _) async {},
               ),
             ),
           ),
@@ -57,7 +57,7 @@ Widget _appWithSaveFailure(VerificationService service) => MaterialApp(
   home: VerificationLoadingScreen(
     claim: _claim,
     verificationService: service,
-    saveVerification: (_, __) async => throw StateError('database unavailable'),
+    saveVerification: (_, _) async => throw StateError('database unavailable'),
   ),
 );
 
