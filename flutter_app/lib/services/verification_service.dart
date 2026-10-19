@@ -23,7 +23,7 @@ class VerificationService {
     final body = jsonEncode({'claim': claim});
     final response = await (_client == null
             ? http.post(uri, headers: headers, body: body)
-            : _client!.post(uri, headers: headers, body: body))
+            : _client.post(uri, headers: headers, body: body))
         .timeout(requestTimeout);
 
     if (response.statusCode != 200) {
