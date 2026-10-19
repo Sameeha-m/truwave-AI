@@ -136,7 +136,10 @@ def create_app(
     application = FastAPI(lifespan=lifespan)
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[
+            "https://sameeha-m.github.io",
+            "http://localhost:8080",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
