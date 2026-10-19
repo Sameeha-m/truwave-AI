@@ -47,7 +47,7 @@ For the first version, train from `claim` text only. Do not use FEVER’s annota
 - `ml/mock.py` implements a deterministic mock, currently returning `UNCERTAIN` by default.
 - `backend/verifier.py` runs ML and evidence concurrently. Evidence is primary; ML may corroborate, be neutral, or oppose. Missing/weak/conflicting evidence can produce `UNCERTAIN`.
 - `backend/main.py` exposes `POST /verify` and builds the configured pipeline.
-- `backend/config.py` accepts the explicit `mock` and `tfidf` providers; TF-IDF is selected with `ML_PROVIDER=tfidf` and does not silently fall back to mock if its artifact is unavailable.
+- `backend/config.py` accepts the explicit `mock` and `tfidf` providers; TF-IDF is now the default both when `ML_PROVIDER` is omitted and in the local `.env` / `.env.example`. Mock remains available only when explicitly selected, and TF-IDF does not silently fall back to mock if its artifact is unavailable.
 - `ml/train_truwave.py` trains the FEVER TF-IDF + Logistic Regression pipeline; `ml/tfidf.py` loads model `fever-tfidf-logreg/v1` and maps FEVER source labels to TruWave's three internal labels.
 - `evidence/google_factcheck.py` and `evidence/service.py` implement live fact-check lookup and evidence normalization. The current verifier returns HTTP 503 if all evidence providers are unavailable; that behavior remains unchanged.
 - Flutter has result screens and four animated loading steps. They are UI-only and do not represent backend progress.
